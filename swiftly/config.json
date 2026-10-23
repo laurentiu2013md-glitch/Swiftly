@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "theme": {
     "mode": "dark",
-    "background": "#E6222632",
-    "foreground": "#FFF5F7FF",
-    "muted": "#FFAFB7CC",
-    "accent": "#FFAEC6FF",
-    "border": "#33FFFFFF"
+    "background": "#00000000",
+    "foreground": "#FFE6E0E9",
+    "muted": "#FFCAC4D0",
+    "accent": "#FFD0BCFF",
+    "border": "#00000000"
   },
   "interaction": {
     "wrap": true,
@@ -30,7 +30,7 @@
       "enabled": true,
       "monitor": "",
       "position": { "anchor": "top-right", "x": 28, "y": 80 },
-      "size": { "width": 340, "height": 200 },
+      "size": { "width": 340, "height": 144 },
       "cornerRadius": 28,
       "initialIndex": 0,
       "widgets": [

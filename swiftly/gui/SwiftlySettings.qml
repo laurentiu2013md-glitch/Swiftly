@@ -1,6 +1,7 @@
+pragma ComponentBehavior: Bound
 // SPDX-License-Identifier: GPL-3.0-only
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls.Material as M3
 import QtQuick.Layouts
 import QtQuick.Window
 
@@ -11,13 +12,22 @@ Window {
     property int draftDuration: 220
     property string status: ""
     property bool saving: false
-    title: "Swiftly · Animation"
-    width: 420
-    height: 350
-    minimumWidth: 380
-    minimumHeight: 330
+    title: "Swiftly · Motion"
+    width: 540
+    height: 580
+    minimumWidth: 540
+    maximumWidth: 540
+    minimumHeight: 580
+    maximumHeight: 580
+    flags: Qt.Dialog | Qt.FramelessWindowHint
+    Shortcut { sequence: "Esc"; enabled: settings.visible; onActivated: settings.close() }
     visible: false
-    color: bridge.config.theme.background || "#FF222632"
+    color: "transparent"
+    M3.Material.theme: colors.dark ? M3.Material.Dark : M3.Material.Light
+    M3.Material.accent: colors.primary
+    M3.Material.foreground: colors.foreground
+    M3.Material.background: colors.container
+    SwiftlyPalette { id: colors; theme: settings.bridge.config.theme }
     onVisibleChanged: {
         if (visible) {
             draftPreset = bridge.animationPreset;
@@ -39,46 +49,170 @@ Window {
         function onConfigSaved() { settings.status = "Saved"; settings.saving = false; }
         function onConfigSaveFailed(message) { settings.status = message; settings.saving = false; }
     }
-    ColumnLayout {
+    Rectangle {
         anchors.fill: parent
-        anchors.margins: 24
-        spacing: 14
-        Label { text: "Widget animation"; font.pixelSize: 24; font.bold: true; color: settings.bridge.config.theme.foreground || "white" }
-        Label { text: "Animation preset"; color: settings.bridge.config.theme.foreground || "white" }
-        ComboBox {
-            id: presetBox
-            objectName: "animationPreset"
-            Layout.fillWidth: true
-            model: ["Fade", "Slide", "Zoom", "None"]
-            currentIndex: settings.bridge.animationPresets.indexOf(settings.draftPreset)
-            onActivated: index => settings.draftPreset = settings.bridge.animationPresets[index]
-            Accessible.name: "Animation preset"
-        }
-        RowLayout {
-            Label { text: "Duration (ms)"; color: settings.bridge.config.theme.foreground || "white" }
-            Item { Layout.fillWidth: true }
-            SpinBox {
-                objectName: "animationDuration"
-                from: 0
-                to: 2000
-                stepSize: 20
-                value: settings.draftDuration
-                enabled: settings.draftPreset !== "none"
-                onValueModified: settings.draftDuration = value
-                Accessible.name: "Animation duration in milliseconds"
+        radius: 32
+        color: colors.surface
+        border.width: 1
+        border.color: colors.outline
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 24
+            spacing: 16
+            RowLayout {
+                spacing: 14
+                Rectangle {
+                    width: 48; height: 48; radius: 24
+                    color: colors.primaryContainer
+                    M3.Label { anchors.centerIn: parent; text: "S"; font.pixelSize: 23; font.weight: Font.Medium; color: colors.primary }
+                }
+                ColumnLayout {
+                    spacing: 2
+                    M3.Label { objectName: "settingsHeading"; text: "Swiftly"; font.pixelSize: 28; font.weight: Font.Medium; color: colors.foreground }
+                    M3.Label { text: "Motion, at your pace"; font.pixelSize: 14; color: colors.muted }
+                }
+                Item { Layout.fillWidth: true }
             }
-        }
-        Label {
-            Layout.fillWidth: true
-            wrapMode: Text.Wrap
-            text: "Scroll or start a swipe in the rightmost 10% of a card to switch widgets."
-            color: settings.bridge.config.theme.muted || "#FFAFB7CC"
-        }
-        Label { text: settings.status; color: settings.bridge.config.theme.accent || "#FFAEC6FF" }
-        RowLayout {
-            Item { Layout.fillWidth: true }
-            Button { text: "Close"; onClicked: settings.close() }
-            Button { objectName: "saveAnimation"; text: "Save"; enabled: !settings.saving; onClicked: settings.apply() }
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 142
+                radius: 28
+                color: colors.container
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 18
+                    spacing: 8
+                    M3.Label { text: "Animation"; font.pixelSize: 18; font.weight: Font.Medium; color: colors.foreground }
+                    M3.Label {
+                        text: ({fade: "A soft crossfade between widgets", slide: "Glide from one widget to the next", zoom: "A gentle change of scale", none: "Switch immediately, without motion"})[settings.draftPreset]
+                        color: colors.muted
+                        font.pixelSize: 13
+                    }
+                    RowLayout {
+                        spacing: 8
+                        Repeater {
+                            model: ["Fade", "Slide", "Zoom", "None"]
+                            delegate: M3.Button {
+                                id: presetButton
+                                required property int index
+                                required property string modelData
+                                objectName: "preset-" + index
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 1
+                                implicitHeight: 44
+                                leftPadding: 8
+                                rightPadding: 8
+                                topInset: 0
+                                bottomInset: 0
+                                font.pixelSize: 13
+                                text: modelData
+                                checkable: true
+                                autoExclusive: true
+                                checked: settings.draftPreset === settings.bridge.animationPresets[index]
+                                M3.Material.roundedScale: M3.Material.FullScale
+                                M3.Material.elevation: 0
+                                M3.Material.background: checked ? colors.primaryContainer : colors.containerHigh
+                                M3.Material.foreground: checked ? colors.primary : colors.muted
+                                contentItem: M3.Label {
+                                    text: presetButton.text
+                                    font: presetButton.font
+                                    color: presetButton.checked ? colors.primary : colors.muted
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                // Flat tonal surfaces also render on the software backend.
+                                background: Rectangle {
+                                    implicitHeight: 44
+                                    radius: height / 2
+                                    color: presetButton.checked ? colors.primaryContainer : colors.containerHigh
+                                    border.color: presetButton.checked ? colors.primary : colors.outline
+                                    border.width: 1
+                                    opacity: presetButton.down ? 0.75 : 1
+                                    Behavior on color { ColorAnimation { duration: 140 } }
+                                }
+                                Accessible.name: modelData + " animation"
+                                onClicked: settings.draftPreset = settings.bridge.animationPresets[index]
+                            }
+                        }
+                    }
+                }
+            }
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 116
+                radius: 28
+                color: colors.container
+                enabled: settings.draftPreset !== "none"
+                opacity: enabled ? 1 : 0.45
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 18
+                    spacing: 4
+                    RowLayout {
+                        M3.Label { text: "Duration"; font.pixelSize: 18; font.weight: Font.Medium; color: colors.foreground }
+                        Item { Layout.fillWidth: true }
+                        Rectangle {
+                            implicitWidth: durationText.implicitWidth + 24
+                            implicitHeight: 28
+                            radius: 14
+                            color: colors.primaryContainer
+                            M3.Label { id: durationText; anchors.centerIn: parent; text: settings.draftDuration + " ms"; color: colors.primary; font.pixelSize: 12 }
+                        }
+                    }
+                    M3.Slider {
+                        objectName: "animationDuration"
+                        Layout.fillWidth: true
+                        from: 0
+                        to: 2000
+                        stepSize: 20
+                        value: settings.draftDuration
+                        onMoved: settings.draftDuration = Math.round(value)
+                        Accessible.name: "Animation duration in milliseconds"
+                    }
+                }
+            }
+            RowLayout {
+                spacing: 12
+                Rectangle {
+                    implicitWidth: 48; implicitHeight: 32; radius: 16
+                    color: colors.primaryContainer
+                    M3.Label { anchors.centerIn: parent; text: "5%"; color: colors.primary; font.pixelSize: 12; font.weight: Font.Medium }
+                }
+                M3.Label {
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    text: "Scroll or start a swipe at the right edge of a card. The rest stays still."
+                    color: colors.muted
+                    font.pixelSize: 13
+                }
+            }
+            Item { Layout.fillHeight: true }
+            RowLayout {
+                Layout.fillWidth: true
+                M3.Label { text: settings.status; color: colors.primary; font.pixelSize: 13; Accessible.name: settings.status }
+                Item { Layout.fillWidth: true }
+                M3.Button {
+                    id: closeButton
+                    text: "Close"
+                    flat: true
+                    font.pixelSize: 14
+                    contentItem: M3.Label { text: closeButton.text; color: colors.foreground; font: closeButton.font; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { implicitHeight: 40; radius: height / 2; color: closeButton.hovered || closeButton.visualFocus ? colors.containerHigh : "transparent" }
+                    onClicked: settings.close()
+                }
+                M3.Button {
+                    id: saveButton
+                    objectName: "saveAnimation"
+                    text: "Save changes"
+                    highlighted: true
+                    enabled: !settings.saving
+                    M3.Material.elevation: 0
+                    font.pixelSize: 14
+                    contentItem: M3.Label { text: saveButton.text; color: colors.contrast; font: saveButton.font; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { implicitHeight: 40; radius: height / 2; color: colors.primary; opacity: !saveButton.enabled ? 0.4 : saveButton.down ? 0.8 : 1 }
+                    onClicked: settings.apply()
+                }
+            }
         }
     }
 }

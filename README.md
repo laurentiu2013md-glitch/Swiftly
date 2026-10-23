@@ -1,12 +1,15 @@
 # Swiftly
 
-A minimal Quickshell widget GUI for Hyprland: clock, date, and media status.
+A compact Material 3 widget GUI for Hyprland: clock, date, and media status.
+The card body is transparent and borderless, with no outer padding. Pill controls
+and the narrow right rail stay visible. New cards default to 340 × 144 pixels.
 Choose **Fade**, **Slide**, **Zoom**, or **None** in settings. **Fade is the default.**
 
-Switch widgets by scrolling or starting a swipe in the **rightmost 10% of each
+Switch widgets by scrolling or starting a swipe in the **rightmost 5% of each
 card**. The rest of the card does not switch. Compositor swipe bindings also
-require the pointer to be over that strip. Click the gear for animation settings;
-changes persist only when you press Save. Media status uses your MPRIS player.
+require the pointer to be over that strip. Tap the rail menu for animation settings;
+changes persist only when you press Save. The read-only area outside the rail
+lets clicks through to the desktop. Media status uses your MPRIS player.
 
 ## Setup with curl
 

@@ -267,3 +267,33 @@ HTTPS downloads/checksums for both full modes, config preservation, argument
 errors, and injected HTTP/corrupted-artifact failure handling. The GUI/cloud
 installation and startup instructions were saved to the environment draft; no
 environment publication or future-task restoration validation was performed.
+
+## Compact Material 3 follow-up
+
+The user clarified that **both** the visible rail and switching area should be
+halved from 10% to **5%**. The card body is now transparent with no border or
+outer padding. The remaining 95% displays widgets and has a Wayland input mask
+that lets desktop clicks through. Fresh cards default to 340×144; existing
+configuration files are still preserved. Settings uses Qt Material controls,
+tonal preset pills, a duration slider, rounded surfaces, and a filled Save button.
+Fade remains the default. A menu tap opens settings; dragging over the same menu
+continues to switch widgets. Settings is a compact, fixed-size dialog and Escape
+dismisses unsaved changes.
+
+Real headless Wayland/Quickshell GUI checks now pass **9 groups**, including
+5% input/rail geometry, transparent body, zero outer content offsets, the actual
+panel input-mask binding, real wheel/drag events, swipe gating, menu taps, unsaved
+preset discard, all preset-pill saves, the duration slider at zero, actual running
+animations, and legacy Fade fallback. Both a card PNG and settings PNG are saved.
+The screenshot harness waits for a complete PNG (including its IEND chunk),
+fixing a capture race found during visual inspection. Image inspection confirmed
+alpha 0 at an empty corner of the actual card render. Material foreground
+contrast is checked against the configured color. Tonal button backgrounds render
+without requiring GPU elevation effects, while preserving native Material input.
+
+Also passed: Bash syntax, JSON parsing, Python compilation, the supplied verifier,
+**20 extended installer checks** and **8 real bridge groups**. Current tests use
+Qt 6.11.2, Quickshell 0.3.2 and Sway 1.12. No physical gesture/media-playback
+claims are added. Historical 10%/ComboBox descriptions above document prior
+versions; the current GUI uses 5% and preset pills. The new palette component is
+part of the bundle and must be included in the curl installer's pinned manifest.

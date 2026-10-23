@@ -24,19 +24,27 @@ $XDG_CONFIG_HOME/quickshell/swiftly and injects SwiftlyBridge.qml.
 
 ## Bundled GUI
 
+The body is transparent and borderless, with no outer content padding. The
+visible rail and pointer switching area both occupy the rightmost 5%; the left
+95% is a click-through, read-only widget display. Material 3 tonal pills, preset
+buttons and a duration slider provide settings. New cards default to 340×144;
+existing configured dimensions/colors are preserved. The menu supports taps
+for settings and drags for switching. Settings can be dismissed with Escape.
+
+
 The cards show a clock, today's date, and MPRIS media metadata. Media controls,
 a month grid, arbitrary third-party widget types and monitor hotplug workflows
 are outside this minimal implementation. Monitor names select an output; an
 empty/unavailable name falls back to the first screen.
 
-The gear opens animation settings. Choose Fade (default), Slide, Zoom, or None,
+The rail menu opens animation settings. Choose Fade (default), Slide, Zoom, or None,
 set a duration from 0 to 2000 ms, and press Save. Closing without Save discards
 those edits. Missing/unknown animation presets fall back to Fade, so existing
 configs need no migration. None or duration 0 disables transitions.
 
-Wheel events and swipes must start in the rightmost 10% of the card. Up/left
+Wheel events and swipes must start in the rightmost 5% of the card. Up/left
 advances and down/right reverses; scrollInvert reverses wheel input. There is no
-switching MouseArea over the left 90%. Compositor swipe IPC is also gated by
+switching MouseArea over the left 95%. Compositor swipe IPC is also gated by
 hovering over the target card's strip. Explicit next/previous IPC remains useful
 for automation. Touchscreen and physical trackpad behavior need desktop testing.
 
@@ -74,11 +82,11 @@ and widget-list changes only require the live JSON reload.
 | --- | --- |
 | schemaVersion | Contract version; currently integer 1. |
 | theme.mode | dark or light; GUI preset selector. Colors below are explicit; switching mode alone does not calculate a palette. |
-| theme.background | Card surface color. All colors use Qt #AARRGGBB (alpha first). |
+| theme.background | Custom GUI surface color; the bundled card body is always transparent. All colors use Qt #AARRGGBB (alpha first). |
 | theme.foreground | Main text color. |
 | theme.muted | Secondary text color. |
 | theme.accent | Selection/active indicator color. |
-| theme.border | Card outline color. |
+| theme.border | Custom GUI outline color; the bundled card has no outer border. |
 | interaction.wrap | Continue from final widget to first, and reverse. |
 | interaction.scrollEnabled | Allow wheel/two-finger scrolling over a card. |
 | interaction.scrollInvert | Reverse the local wheel switching direction. |
@@ -98,7 +106,7 @@ and widget-list changes only require the live JSON reload.
 | stacks[].position.anchor | top-left/top-right/bottom-left/bottom-right relative to the selected output's usable area. |
 | stacks[].position.x/y | Nonnegative inward horizontal/vertical margins in logical pixels. |
 | stacks[].size.width/height | Positive card dimensions in logical pixels. |
-| stacks[].cornerRadius | Nonnegative logical pixels; clamp to half the shorter dimension. |
+| stacks[].cornerRadius | Custom GUI corner radius; bundled pill radii follow their geometry. |
 | stacks[].initialIndex | Zero-based starting widget; bridge clamps it to the current widget list. Current indices are transient. |
 | stacks[].widgets | Ordered nonempty widget list; IDs unique within the stack. |
 | stacks[].widgets[].id | Stable widget instance ID. |

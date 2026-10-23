@@ -143,7 +143,7 @@ with tempfile.TemporaryDirectory(prefix='swiftly-extended-', dir=BUNDLE.parent) 
             assert result.returncode==0,(result.stdout,result.stderr)
         install()
         target=cfgroot/'quickshell/swiftly'
-        for name in ['shell.qml','SwiftlyCard.qml','SwiftlySettings.qml','WidgetFace.qml','SwiftlyBridge.qml']:
+        for name in ['shell.qml','SwiftlyCard.qml','SwiftlySettings.qml','WidgetFace.qml','SwiftlyPalette.qml','SwiftlyBridge.qml']:
             assert (target/name).is_file(),name
         assert cfg.read_bytes()==before
         backups=sorted(str(p) for p in target.parent.glob('swiftly.bak.*'))

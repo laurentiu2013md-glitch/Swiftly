@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 // SPDX-License-Identifier: GPL-3.0-only
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material as M3
 
 Rectangle {
     id: card
@@ -12,17 +13,19 @@ Rectangle {
     readonly property string preset: bridge.animationPreset
     readonly property int duration: preset === "none" ? 0 : bridge.animationDuration
     readonly property var theme: bridge.config.theme
-    readonly property real switchZoneStart: width * 0.9
+    readonly property real switchZoneStart: width * 0.95
     readonly property alias switchArea: switching
+    readonly property alias rail: visualRail
+    readonly property alias contentArea: content
     property alias widgetRepeater: faces
     signal settingsRequested()
     implicitWidth: 340
-    implicitHeight: 200
-    color: theme.background || "#E6222632"
-    radius: Math.max(0, Math.min(Number(stack.cornerRadius) || 0, width / 2, height / 2))
-    border.color: theme.border || "#33FFFFFF"
-    border.width: 1
+    implicitHeight: 144
+    color: "transparent"
+    radius: 0
+    border.width: 0
     clip: true
+    SwiftlyPalette { id: colors; theme: card.theme }
 
     function inSwitchZone(x) { return width > 0 && x >= switchZoneStart && x < width; }
     function scrollAt(x, delta) {
@@ -40,9 +43,9 @@ Rectangle {
     }
 
     Item {
+        id: content
         anchors.fill: parent
-        anchors.margins: 22
-        anchors.rightMargin: card.width * 0.1 + 10
+        anchors.rightMargin: card.width * 0.05
         Repeater {
             id: faces
             model: card.widgets
@@ -96,38 +99,80 @@ Rectangle {
         }
         Timer { id: wheelCooldown; interval: 140 }
         Rectangle {
-            anchors.fill: parent
-            radius: card.radius
-            color: card.theme.accent || "#FFAEC6FF"
-            opacity: switching.containsMouse ? 0.16 : 0.035
-            Behavior on opacity { NumberAnimation { duration: 120 } }
-        }
-        Column {
+            id: visualRail
             anchors.centerIn: parent
-            spacing: 6
-            Repeater {
-                model: card.widgets.length
+            width: parent.width
+            height: Math.min(card.height, Math.max(64, indicators.implicitHeight + 40))
+            radius: width / 2
+            color: switching.containsMouse || menuButton.hovered ? colors.primaryContainer : colors.containerHigh
+            opacity: switching.containsMouse || menuButton.hovered ? 1 : 0.72
+            Behavior on color { ColorAnimation { duration: 160 } }
+            Behavior on opacity { NumberAnimation { duration: 160 } }
+            Column {
+                id: indicators
+                anchors.top: parent.top
+                anchors.topMargin: 10
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 5
+                Repeater {
+                    model: card.widgets.length
+                    Rectangle {
+                        required property int index
+                        width: 3
+                        height: index === card.selectedIndex ? 12 : 3
+                        radius: width / 2
+                        color: index === card.selectedIndex ? colors.primary : colors.muted
+                        opacity: index === card.selectedIndex ? 1 : 0.45
+                        Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                    }
+                }
+            }
+        }
+        M3.ToolButton {
+            id: menuButton
+            objectName: "cardSettings"
+            anchors.horizontalCenter: visualRail.horizontalCenter
+            y: visualRail.y + visualRail.height - height
+            width: switching.width
+            height: 32
+            padding: 0
+            text: "⋮"
+            font.pixelSize: 16
+            Accessible.name: "Open Swiftly settings"
+            contentItem: Label { text: menuButton.text; color: colors.foreground; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font: menuButton.font }
+            background: Item {
                 Rectangle {
-                    required property int index
-                    width: 4
-                    height: index === card.selectedIndex ? 16 : 4
-                    radius: 2
-                    color: card.theme.accent || "#FFAEC6FF"
-                    opacity: index === card.selectedIndex ? 1 : 0.35
+                    anchors.centerIn: parent
+                    width: visualRail.width
+                    height: 28
+                    radius: width / 2
+                    color: colors.primary
+                    opacity: menuButton.down ? 0.24 : menuButton.hovered || menuButton.visualFocus ? 0.12 : 0
+                }
+            }
+            onClicked: card.settingsRequested()
+            onHoveredChanged: {
+                if (hovered) card.bridge.pointerStackId = card.stack.id;
+                else if (!switching.containsMouse && card.bridge.pointerStackId === card.stack.id) card.bridge.pointerStackId = "";
+            }
+            // A drag over the menu still switches; an ordinary tap opens settings.
+            DragHandler {
+                target: null
+                property real startX: 0
+                property point lastDelta: Qt.point(0, 0)
+                onActiveTranslationChanged: lastDelta = activeTranslation
+                onActiveChanged: {
+                    if (active) {
+                        startX = card.switchZoneStart + menuButton.x + centroid.pressPosition.x;
+                        lastDelta = activeTranslation;
+                    } else {
+                        card.swipeFrom(startX, lastDelta.x, lastDelta.y);
+                    }
                 }
             }
         }
     }
     Component.onDestruction: {
         if (bridge.pointerStackId === stack.id) bridge.pointerStackId = "";
-    }
-    ToolButton {
-        anchors.left: parent.left
-        anchors.bottom: parent.bottom
-        anchors.margins: 4
-        text: "⚙"
-        font.pixelSize: 15
-        Accessible.name: "Animation settings"
-        onClicked: card.settingsRequested()
     }
 }

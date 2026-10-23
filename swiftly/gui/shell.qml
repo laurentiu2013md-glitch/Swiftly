@@ -20,10 +20,12 @@ ShellRoot {
             readonly property string anchor: position.anchor || "top-right"
             screen: Quickshell.screens.find(screen => screen.name === modelData.monitor) || Quickshell.screens[0]
             implicitWidth: Math.max(120, Number((modelData.size || {}).width) || 340)
-            implicitHeight: Math.max(100, Number((modelData.size || {}).height) || 200)
+            implicitHeight: Math.max(100, Number((modelData.size || {}).height) || 144)
             color: "transparent"
             exclusionMode: ExclusionMode.Normal
             exclusiveZone: 0
+            // Transparent/read-only widget content must not block the desktop.
+            mask: Region { item: widgetCard.switchArea }
             anchors {
                 top: panel.anchor.startsWith("top")
                 bottom: panel.anchor.startsWith("bottom")
@@ -37,6 +39,7 @@ ShellRoot {
                 right: Math.max(0, Number(panel.position.x) || 0)
             }
             SwiftlyCard {
+                id: widgetCard
                 anchors.fill: parent
                 bridge: runtimeBridge
                 stack: panel.modelData

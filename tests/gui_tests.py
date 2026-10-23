@@ -15,6 +15,11 @@ import time
 repo=Path(sys.argv[1]).resolve()
 cloud=Path(sys.argv[2]).resolve()
 logs=Path(sys.argv[3]).resolve();logs.mkdir(parents=True,exist_ok=True)
+for old in [logs/'card.png',logs/'settings.png']: old.unlink(missing_ok=True)
+def png_ready(path):
+    if not path.exists(): return False
+    data=path.read_bytes()
+    return data.startswith(b'\x89PNG\r\n\x1a\n') and data.endswith(b'\x00\x00\x00\x00IEND\xaeB`\x82')
 runtime=cloud/'runtime-root'
 loader=runtime/'usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2'
 libs=runtime/'usr/lib/x86_64-linux-gnu'
@@ -27,11 +32,12 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
     xdg=root/'runtime';xdg.mkdir(mode=0o700)
     gui=root/'gui';shutil.copytree(repo/'swiftly/gui',gui)
     shutil.copy2(repo/'swiftly/SwiftlyBridge.qml',gui/'SwiftlyBridge.qml')
+    cardfile=gui/'SwiftlyCard.qml'
+    cardfile.write_text(cardfile.read_text().replace('id: card','id: card\n    readonly property alias testColors: colors',1))
     shell=(gui/'shell.qml').read_text()
     shell=shell.replace('import Quickshell\n','import Quickshell\nimport Quickshell.Io\nimport QtTest\n')
     shell=shell.replace('    Variants {','    Variants {\n        id: testPanels')
-    shell=shell.replace('required property var modelData','readonly property alias testCard: testCard\n            required property var modelData')
-    shell=shell.replace('            SwiftlyCard {','            SwiftlyCard {\n                id: testCard')
+    shell=shell.replace('required property var modelData','readonly property alias testCard: widgetCard\n            required property var modelData')
     probe='''
     TestCase {
         id: input
@@ -48,18 +54,19 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
                 const face=card.widgetRepeater.itemAt(i);
                 faces.push({opacity:face.opacity, x:face.x, scale:face.scale});
             }
-            return JSON.stringify({index:card.selectedIndex,width:card.width,zone:card.switchArea.x,zoneWidth:card.switchArea.width,preset:card.preset,duration:card.duration,faces:faces,hover:runtimeBridge.pointerStackId,settingsVisible:settings.visible,status:settings.status});
+            return JSON.stringify({index:card.selectedIndex,width:card.width,zone:card.switchArea.x,zoneWidth:card.switchArea.width,railWidth:card.rail.width,masked:testPanels.instances[0].mask.item===card.switchArea,bodyAlpha:card.color.a,contentX:card.contentArea.x,contentY:card.contentArea.y,contentWidth:card.contentArea.width,contentHeight:card.contentArea.height,preset:card.preset,duration:card.duration,faces:faces,hover:runtimeBridge.pointerStackId,settingsVisible:settings.visible,status:settings.status,sourceForeground:card.testColors.theme.foreground,actualForeground:card.testColors.foreground.toString(),titleColor:input.findChild(settings.contentItem,"settingsHeading").color.toString(),presetFill:input.findChild(settings.contentItem,"preset-0").background.color.toString()});
         }
         function wheel(x: real, delta: int): void { input.mouseWheel(testPanels.instances[0].testCard,x,80,0,delta); }
         function move(x: real): void { input.mouseMove(testPanels.instances[0].testCard,x,80); }
         function drag(x: real, dx: real): void { input.mouseDrag(testPanels.instances[0].testCard,x,80,dx,0); }
         function selectPreset(index: int): void {
-            const box=input.findChild(settings.contentItem,"animationPreset");
-            box.forceActiveFocus();
-            input.keyClick(Qt.Key_Home);
-            for (let i=0; i<index; i++) input.keyClick(Qt.Key_Down);
+            const button=input.findChild(settings.contentItem,"preset-"+index);
+            input.mouseClick(button);
         }
+        function openSettings(): void { const button=input.findChild(testPanels.instances[0].testCard,"cardSettings"); input.mouseClick(button); }
+        function durationZero(): void { const slider=input.findChild(settings.contentItem,"animationDuration"); input.mouseClick(slider,slider.leftPadding,slider.height/2); }
         function save(): void { const button=input.findChild(settings.contentItem,"saveAnimation"); input.mouseClick(button); }
+        function settingsScreenshot(path: string): void { settings.contentItem.grabToImage(result => result.saveToFile(path)); }
         function closeSettings(): void { settings.close(); }
         function screenshot(path: string): void { testPanels.instances[0].testCard.grabToImage(result => result.saveToFile(path)); }
     }
@@ -97,31 +104,44 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
         qs=subprocess.Popen([str(cloud/'bin/qs'),'-p',str(gui)],env=env,stdout=qslog,stderr=subprocess.STDOUT)
         wait(lambda:state()['width']>0)
         s=state();assert s['preset']=='fade' and s['index']==0
-        assert abs(s['zone']-s['width']*.9)<.01 and abs(s['zoneWidth']-s['width']*.1)<.01
+        assert abs(s['zone']-s['width']*.95)<.01 and abs(s['zoneWidth']-s['width']*.05)<.01
+        assert abs(s['railWidth']-s['width']*.05)<.01 and s['bodyAlpha']==0 and s['masked']
+        assert s['contentX']==0 and s['contentY']==0 and abs(s['contentWidth']-s['width']*.95)<.01
         print('PASS: production panel/card/settings loaded on real headless Wayland; Fade default; strip geometry',flush=True)
         width=s['width']
-        for x in [10,width*.5,width*.9-1]:
+        for x in [10,width*.5,width*.95-1]:
             call('guiTest','wheel',x,-120);assert state()['index']==0,(x,state())
-        call('guiTest','wheel',width*.95,-120);wait(lambda:state()['index']==1)
+        call('guiTest','wheel',width*.975,-120);wait(lambda:state()['index']==1)
         time.sleep(.16)
-        call('guiTest','wheel',width*.95,120);wait(lambda:state()['index']==0)
-        print('PASS: actual Qt wheel events ignored in left 90%, advance/reverse in right 10%',flush=True)
+        call('guiTest','wheel',width*.975,120);wait(lambda:state()['index']==0)
+        print('PASS: actual Qt wheel events ignored in left 95%, advance/reverse in right 5%',flush=True)
         call('guiTest','drag',width*.5,-80);assert state()['index']==0
-        call('guiTest','drag',width*.95,-80);wait(lambda:state()['index']==1)
+        call('guiTest','drag',width*.975,-80);wait(lambda:state()['index']==1)
         print('PASS: actual Qt mouse swipes must start inside right strip',flush=True)
         call('guiTest','move',width*.5)
         before=state()['index'];call('swiftly','swipe','left',4);assert state()['index']==before
-        call('guiTest','move',width*.95);wait(lambda:state()['hover']=='daily')
+        call('guiTest','move',width*.975);wait(lambda:state()['hover']=='daily')
         call('swiftly','swipe','left',4);assert state()['index']==(before+1)%3
         print('PASS: compositor swipe IPC ignores pointer outside strip and accepts inside',flush=True)
-        call('swiftly','settings');wait(lambda:state()['settingsVisible'])
+        call('guiTest','openSettings');wait(lambda:state()['settingsVisible'])
+        assert state()['titleColor']=='#'+default['theme']['foreground'][-6:].lower()
+        assert state()['actualForeground']==state()['titleColor']
+        call('guiTest','settingsScreenshot',str(logs/'settings.png'));wait(lambda:png_ready(logs/'settings.png'))
+        before=cfg.read_bytes()
+        call('guiTest','selectPreset',1);call('guiTest','closeSettings')
+        wait(lambda:not state()['settingsVisible']);assert cfg.read_bytes()==before
+        call('guiTest','openSettings');wait(lambda:state()['settingsVisible'])
+        print('PASS: rail menu tap opens Material dialog; Close discards unsaved preset',flush=True)
         for index,preset in enumerate(['fade','slide','zoom','none']):
             call('guiTest','selectPreset',index)
             call('guiTest','save')
             wait(lambda:json.loads(cfg.read_text())['interaction']['animationPreset']==preset)
             wait(lambda:state()['status']=='Saved')
             assert state()['preset']==preset
-        print('PASS: real settings ComboBox key selection and Save button persist all four presets',flush=True)
+        print('PASS: real Material preset pill selection and Save button persist all four presets',flush=True)
+        call('guiTest','selectPreset',0);call('guiTest','durationZero');call('guiTest','save')
+        wait(lambda:json.loads(cfg.read_text())['interaction']['animationMs']==0)
+        print('PASS: real Material duration slider writes zero duration on Save',flush=True)
         call('guiTest','closeSettings')
         for preset in ['fade','slide','zoom','none']:
             value=json.loads(cfg.read_text());value['interaction']['animationPreset']=preset;value['interaction']['animationMs']=800
@@ -138,9 +158,10 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
         print('PASS: sampled real fade/slide/zoom transitions; None switches immediately; final states settle',flush=True)
         value=json.loads(cfg.read_text());value['interaction'].pop('animationPreset');save_config(value)
         wait(lambda:state()['preset']=='fade')
-        call('guiTest','screenshot',str(logs/'card.png'));wait(lambda:(logs/'card.png').exists())
+        wait(lambda:state()['faces'][state()['index']]['opacity']==1)
+        call('guiTest','screenshot',str(logs/'card.png'));wait(lambda:png_ready(logs/'card.png'))
         print('PASS: legacy config without preset falls back to Fade; real card image captured',flush=True)
-        print('RESULT: 7 real GUI groups passed',flush=True)
+        print('RESULT: 9 real GUI groups passed',flush=True)
     finally:
         for p in [qs,sway]:
             if p is not None:
