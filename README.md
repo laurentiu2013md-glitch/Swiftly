@@ -1,1 +1,53 @@
 # Swiftly
+
+Swiftly Part 2 provides a JSON configuration, a Quickshell bridge with IPC,
+and installers for an existing Hyprland setup. **The Part 1 GUI is not included.**
+This repository is a tested integration bundle, not a complete desktop GUI.
+
+## Desktop setup
+
+On Arch Linux with Hyprland running, provide your Part 1 GUI directory containing
+`shell.qml`, then run as your normal user:
+
+```bash
+bash swiftly/install-all.sh /path/to/gui /path/to/hyprland.lua
+# Use your existing hyprland.conf instead if that is your loaded config.
+qs -p "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/swiftly"
+```
+
+Your GUI must instantiate `SwiftlyBridge` once. Review the generated gesture
+block before running `hyprctl reload`. Existing configuration is preserved;
+changed files and GUI trees receive backups. See [integration details](swiftly/README.md).
+
+## Tests
+
+From the repository root:
+
+```bash
+bash -n swiftly/install-all.sh swiftly/install-config.sh tools/setup-cloud-runtime.sh
+python3 -m json.tool swiftly/config.json >/dev/null
+python3 -m compileall -q verify_swiftly.py swiftly/support.py tests
+python3 verify_swiftly.py
+python3 tests/extended_tests.py "$PWD"
+```
+
+For the Debian cloud workspace, prepare an isolated official-package runtime
+without modifying system packages:
+
+```bash
+bash tools/setup-cloud-runtime.sh /workspace/scratch/swiftly-cloudtest
+/workspace/scratch/swiftly-cloudtest/bin/qmllint swiftly/SwiftlyBridge.qml
+python3 tests/runtime_tests.py "$PWD" /workspace/scratch/swiftly-cloudtest/bin/qs /workspace/scratch/swiftly-cloudtest/logs/repo-runtime
+```
+
+The cloud setup uses Debian unstable packages privately because Quickshell is
+not in Debian 13 stable. It requires network access to `deb.debian.org`, APT,
+`dpkg-deb`, Python 3, and the Debian archive keyring. It resolves current official
+packages; recorded versions are in [the test report](TEST_REPORT.md).
+
+Installer tests mock compositor and package commands. Runtime tests launch two
+real offscreen minimal shells and exercise IPC and live JSON reload. They do not
+validate the missing GUI, a real Hyprland session, or physical gestures.
+Quickshell 0.3.2 may return exit code 0 for a rejected IPC call; inspect its output.
+
+Original source: GPL-3.0-only; see [LICENSE](LICENSE).
