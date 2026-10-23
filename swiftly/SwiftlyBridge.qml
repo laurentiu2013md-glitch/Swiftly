@@ -7,7 +7,17 @@ Scope {
     id: bridge
     property alias config: adapter
     property var indices: ({})
+    // The bundled GUI enables this gate for compositor swipe IPC too.
+    property bool requirePointerZone: false
+    property string pointerStackId: ""
+    readonly property var animationPresets: ["fade", "slide", "zoom", "none"]
+    readonly property string animationPreset: animationPresets.indexOf(adapter.interaction.animationPreset) >= 0
+            ? adapter.interaction.animationPreset : "fade"
+    readonly property int animationDuration: adapter.interaction.animationMs === undefined ? 220
+            : Math.max(0, Math.min(2000, Number(adapter.interaction.animationMs) || 0))
     signal settingsRequested()
+    signal configSaved()
+    signal configSaveFailed(string message)
 
     FileView {
         id: file
@@ -17,6 +27,8 @@ Scope {
         onFileChanged: reload()
         atomicWrites: true
         onLoadFailed: error => console.error("Swiftly config load failed:", error)
+        onSaved: bridge.configSaved()
+        onSaveFailed: error => bridge.configSaveFailed("Could not save config (error " + error + ").")
         JsonAdapter {
             id: adapter
             property int schemaVersion: 1
@@ -52,6 +64,16 @@ Scope {
     // var objects/arrays before calling; mutating a nested member emits no signal.
     function saveConfig() { file.writeAdapter(); }
 
+    function saveAnimation(preset, duration) {
+        if (animationPresets.indexOf(preset) < 0) return false;
+        const interaction = Object.assign({}, adapter.interaction);
+        interaction.animationPreset = preset;
+        interaction.animationMs = Math.max(0, Math.min(2000, Math.round(Number(duration) || 0)));
+        adapter.interaction = interaction;
+        saveConfig();
+        return true;
+    }
+
     IpcHandler {
         target: "swiftly"
         function next(stackId: string): void { bridge.step(stackId, 1); }
@@ -62,6 +84,7 @@ Scope {
             const g = adapter.gestures;
             // Stale compositor bindings are ignored until the helper is rerun.
             if (!g.enabled || g.fingers !== fingers) return;
+            if (bridge.requirePointerZone && bridge.pointerStackId !== g.targetStack) return;
             if (direction === g.nextDirection) bridge.step(g.targetStack, 1);
             else if (direction === g.previousDirection) bridge.step(g.targetStack, -1);
         }

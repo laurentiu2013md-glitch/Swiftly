@@ -134,6 +134,22 @@ with tempfile.TemporaryDirectory(prefix='swiftly-extended-', dir=BUNDLE.parent) 
         assert (target/'old').read_text()=='preserve'
         assert not list(root.glob('.swiftly-*'))
     test('injected GUI final rename failure restores previous tree',rollback)
+    def bundled_gui():
+        (binpath/'pacman').write_text('#!/bin/bash\n[[ $1 = -T ]]\n')
+        (binpath/'pacman').chmod(0o755)
+        before=cfg.read_bytes()
+        def install():
+            result=subprocess.run(['bash',str(BUNDLE/'swiftly/install-all.sh'),str(hypr)],env=env,capture_output=True,text=True)
+            assert result.returncode==0,(result.stdout,result.stderr)
+        install()
+        target=cfgroot/'quickshell/swiftly'
+        for name in ['shell.qml','SwiftlyCard.qml','SwiftlySettings.qml','WidgetFace.qml','SwiftlyBridge.qml']:
+            assert (target/name).is_file(),name
+        assert cfg.read_bytes()==before
+        backups=sorted(str(p) for p in target.parent.glob('swiftly.bak.*'))
+        install()
+        assert backups==sorted(str(p) for p in target.parent.glob('swiftly.bak.*'))
+    test('bundled GUI default install preserves config and is idempotent',bundled_gui)
 
 print(f'RESULT: {len(passed)} passed; {len(failed)} failed')
 sys.exit(bool(failed))

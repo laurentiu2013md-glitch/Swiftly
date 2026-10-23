@@ -1,6 +1,6 @@
-# Swiftly — Part 2
+# Swiftly — GUI and integration
 
-Original source files in this bundle are GPL-3.0-only; the complete GPLv3 text
+Source files in this bundle are GPL-3.0-only; the complete GPLv3 text
 is in COPYING. Runtime packages keep their respective licenses. Reference
 artwork is not included or redistributed.
 
@@ -9,19 +9,38 @@ artwork is not included or redistributed.
 - config.json: defaults; installed to $XDG_CONFIG_HOME/swiftly/config.json
   (normally ~/.config/swiftly/config.json).
 - install-config.sh: installs a missing config and always keeps an existing one.
-- install-all.sh: installs runtime packages, copies your Part 1 GUI, installs the
+- gui/: minimal widget cards and animation settings (Fade, Slide, Zoom, None).
+- install-all.sh: installs runtime packages, copies the bundled or your custom GUI, installs the
   bridge/helper, and adds one managed gesture block to a selected Hyprland file.
 - support.py: Python standard-library helper; stages/backups GUI replacements,
   writes gesture changes atomically and supports --gestures-only and --check.
 - SwiftlyBridge.qml: live JSON adapter, transient widget indices and IPC handler.
 - COPYING: complete GPLv3 license text.
 
-Part 1 is not included. Provide its complete GUI directory, containing shell.qml,
-including its separate settings GUI and all local imports/assets. The installer
-copies this directory to $XDG_CONFIG_HOME/quickshell/swiftly. It does not rewrite
-your shell.qml. SwiftlyBridge.qml is a reserved name in that directory.
+The minimal GUI is included in gui/. Pass only your Hyprland config to use it:
+`bash install-all.sh /path/to/hyprland.lua` (or .conf). A second, leading GUI
+argument still selects a custom GUI directory. The installer copies the GUI to
+$XDG_CONFIG_HOME/quickshell/swiftly and injects SwiftlyBridge.qml.
 
-## Integration with Part 1
+## Bundled GUI
+
+The cards show a clock, today's date, and MPRIS media metadata. Media controls,
+a month grid, arbitrary third-party widget types and monitor hotplug workflows
+are outside this minimal implementation. Monitor names select an output; an
+empty/unavailable name falls back to the first screen.
+
+The gear opens animation settings. Choose Fade (default), Slide, Zoom, or None,
+set a duration from 0 to 2000 ms, and press Save. Closing without Save discards
+those edits. Missing/unknown animation presets fall back to Fade, so existing
+configs need no migration. None or duration 0 disables transitions.
+
+Wheel events and swipes must start in the rightmost 10% of the card. Up/left
+advances and down/right reverses; scrollInvert reverses wheel input. There is no
+switching MouseArea over the left 90%. Compositor swipe IPC is also gated by
+hovering over the target card's strip. Explicit next/previous IPC remains useful
+for automation. Touchscreen and physical trackpad behavior need desktop testing.
+
+## Integrating a custom GUI
 
 Instantiate exactly one SwiftlyBridge in the main shell.qml. Bind the stack model
 to bridge.config.stacks, style to bridge.config.theme, and widget selection to
@@ -65,7 +84,8 @@ and widget-list changes only require the live JSON reload.
 | interaction.scrollInvert | Reverse the local wheel switching direction. |
 | interaction.swipeEnabled | Allow local QML pointer/touch swipes over a card. |
 | interaction.swipeThreshold | Local swipe recognition distance in logical pixels; positive. |
-| interaction.animationMs | Part 1 transition duration in milliseconds; zero disables animation. |
+| interaction.animationMs | Transition duration, 0–2000 ms; zero disables animation. |
+| interaction.animationPreset | fade (default), slide, zoom, or none. Missing/unknown values use fade. |
 | gestures.enabled | Enable compositor trackpad gestures; independent of local QML input. |
 | gestures.fingers | Integer 3–9; four defaults to leaving common three-finger workspace gestures available. Hardware may support fewer. |
 | gestures.nextDirection | left/right/up/down gesture that advances the target stack. |
@@ -74,7 +94,7 @@ and widget-list changes only require the live JSON reload.
 | stacks | Ordered stack definitions; IDs must be unique. |
 | stacks[].id | Stable letters/numbers/underscore/hyphen identifier, also used by IPC. |
 | stacks[].enabled | Show/operate this stack. |
-| stacks[].monitor | Hyprland output name, e.g. eDP-1; empty means Part 1 chooses the focused output when creating the surface. |
+| stacks[].monitor | Output name, e.g. eDP-1; bundled GUI defaults to the first screen. |
 | stacks[].position.anchor | top-left/top-right/bottom-left/bottom-right relative to the selected output's usable area. |
 | stacks[].position.x/y | Nonnegative inward horizontal/vertical margins in logical pixels. |
 | stacks[].size.width/height | Positive card dimensions in logical pixels. |
@@ -82,11 +102,11 @@ and widget-list changes only require the live JSON reload.
 | stacks[].initialIndex | Zero-based starting widget; bridge clamps it to the current widget list. Current indices are transient. |
 | stacks[].widgets | Ordered nonempty widget list; IDs unique within the stack. |
 | stacks[].widgets[].id | Stable widget instance ID. |
-| stacks[].widgets[].type | Part 1 registry key; clock/calendar/media are proposed keys, not built-in Quickshell widget types. |
-| stacks[].widgets[].options | Widget-specific data. Clock format HH:mm; calendar firstDayOfWeek 1 means Monday; media has no options in this example. Part 1 must implement these keys. |
+| stacks[].widgets[].type | Bundled GUI supports clock, calendar (today’s date), and media (MPRIS metadata). |
+| stacks[].widgets[].options | Widget-specific data. Clock format HH:mm; calendar firstDayOfWeek 1 means Monday; media has no options in this example. The minimal date widget does not use firstDayOfWeek. |
 
 Size, radius and position semantics are the Swiftly contract, not automatic
-properties of Quickshell. Part 1 must implement/clamp them. Use a suitable
+properties of Quickshell. The bundled card clamps geometry; a custom GUI must do so too. Use a suitable
 layer-shell PanelWindow for anchored desktop cards; compositor-managed floating
 windows cannot be assumed to accept arbitrary absolute desktop positions.
 
@@ -98,8 +118,8 @@ Run these commands as your normal user. No chmod is necessary with bash.
 hyprctl version
 qs --version
 bash install-config.sh
-# Put Part 1 in ./gui; pass the actual loaded config file.
-bash install-all.sh ./gui ~/.config/hypr/hyprland.lua
+# Use the bundled GUI; pass the actual loaded config file.
+bash install-all.sh ~/.config/hypr/hyprland.lua
 # For an existing hyprlang configuration instead:
 # bash install-all.sh ./gui ~/.config/hypr/hyprland.conf
 hyprctl reload
@@ -169,7 +189,7 @@ tree. Resolve collisions or select a dedicated already-loaded include file.
 Do not bind the same fingers/directions both to workspace switching and Swiftly.
 Generated gestures are global, always targeting gestures.targetStack; they are
 discrete next/previous changes, not interactive 1:1 card animation. Mouse/scroll
-and touch animations within cards remain part of Part 1.
+and swipe transitions in the bundled cards use the selected preset; custom GUIs implement their own transitions.
 
 ## Optional touchscreen gestures
 
@@ -223,7 +243,9 @@ Python compilation, the supplied installer verifier, 19 extended installer
 checks, qmllint 6.11.2, and 8 real headless Quickshell 0.3.2 runtime groups passed
 after the fixes described in ../TEST_REPORT.md. Package/Hyprland commands in
 installer tests are mocked; runtime IPC and FileView tests use real Quickshell.
-Part 1, a Hyprland session and physical gesture hardware are not supplied.
+The original bundle did not supply Part 1. The new minimal GUI has separate
+real headless Wayland/input tests recorded in ../TEST_REPORT.md; a real Hyprland
+session and physical gesture hardware are not supplied.
 No full GUI, compositor parsing/reload or hardware gesture validation is claimed.
 Direct documentation sites were proxy-blocked; current official documentation
 sources were checked through their GitHub mirrors. See ../TEST_REPORT.md.

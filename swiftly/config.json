@@ -14,7 +14,8 @@
     "scrollInvert": false,
     "swipeEnabled": true,
     "swipeThreshold": 48,
-    "animationMs": 220
+    "animationMs": 220,
+    "animationPreset": "fade"
   },
   "gestures": {
     "enabled": true,

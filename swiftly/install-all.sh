@@ -5,10 +5,12 @@ umask 077
 trap 'printf "[Swiftly] ERROR at line %s; stopping.\n" "$LINENO" >&2' ERR
 die() { printf '[Swiftly] %s\n' "$*" >&2; exit 1; }
 [[ $EUID -ne 0 ]] || die 'Run as your normal user; sudo is used only for pacman.'
-[[ $# -eq 2 ]] || die 'Usage: bash install-all.sh GUI_DIRECTORY HYPRLAND_MAIN_CONFIG'
 base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
-gui=$1
-hypr=$2
+case $# in
+    1) gui=$base/gui; hypr=$1 ;;
+    2) gui=$1; hypr=$2 ;;
+    *) die 'Usage: bash install-all.sh [GUI_DIRECTORY] HYPRLAND_MAIN_CONFIG' ;;
+esac
 [[ -f $gui/shell.qml ]] || die 'GUI_DIRECTORY must contain Part 1 shell.qml.'
 [[ -f $hypr ]] || die 'Pass your actual, existing Hyprland main config.'
 [[ $hypr = *.lua || $hypr = *.conf ]] || die 'Expected .lua or .conf Hyprland config.'

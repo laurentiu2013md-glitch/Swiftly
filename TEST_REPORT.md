@@ -1,5 +1,8 @@
 # Swiftly cloud test report — 2026-10-23
 
+This report preserves the original attachment tests. The new bundled GUI and its
+additional validation are described in the GUI follow-up at the end.
+
 ## Result
 
 The supplied Part 2 bundle was tested in scratch outside the baseline checkout.
@@ -195,3 +198,63 @@ All five bootstrap groups passed: real HTTPS downloads/checksums for config-only
 repeat config preservation, real full-mode downloads with mocked compositor and
 package commands, argument rejection, and injected HTTP/corrupt-download failures
 with cleanup and no config changes. No new full GUI or hardware claims are made.
+
+## Bundled GUI and animations follow-up
+
+The user requested a new minimal GUI, four animation presets, Fade by default,
+and switching only in the rightmost 10% of each card. `swiftly/gui/` now supplies
+clock/date/MPRIS metadata cards, a settings window with Fade/Slide/Zoom/None and
+explicit Save, and anchored layer-shell panels. Old configs without a preset use
+Fade. Local wheel events and swipe start positions are restricted to a physical
+10%-wide MouseArea; compositor swipe IPC additionally requires strip hover in the
+bundled GUI. Explicit next/previous IPC remains available for automation.
+
+`install-all.sh HYPRLAND_CONFIG` now installs the included GUI; its previous
+`install-all.sh GUI_DIRECTORY HYPRLAND_CONFIG` form still accepts a custom GUI.
+Config-only installation keeps existing JSON and needs no migration.
+
+Cloud runtime preparation was refreshed and reproduced with 263 authenticated
+official packages, adding Sway **1.12**, Qt 6.11.2 Wayland plugins and QtTest.
+No system packages or user desktop files were changed. Sway runs with the
+headless backend, pixman renderer, no Xwayland/background children, and a private
+Wayland socket. Quickshell **0.3.2** renders the actual production PanelWindow,
+card and settings components. No GUI handlers or animations are mocked.
+
+Commands from the repository root:
+
+```bash
+bash -n install.sh swiftly/install-all.sh swiftly/install-config.sh tools/setup-cloud-runtime.sh
+python3 -m json.tool swiftly/config.json
+python3 -m compileall -q swiftly/support.py tests verify_swiftly.py
+python3 verify_swiftly.py
+python3 tests/extended_tests.py "$PWD"
+python3 tests/runtime_tests.py "$PWD" /workspace/scratch/swiftly-cloudtest/bin/qs /workspace/scratch/swiftly-cloudtest/logs/gui-bridge
+python3 tests/gui_tests.py "$PWD" /workspace/scratch/swiftly-cloudtest /workspace/scratch/swiftly-cloudtest/logs/gui
+```
+
+All passed: supplied verifier, **20 extended installer checks**, **8 real bridge
+runtime groups**, and **7 real GUI groups**. The extra installer check exercises
+bundled-GUI selection, config preservation and a repeat install with no extra
+backup. The GUI suite stages production files and adds only a QtTest/IPC probe.
+It tests:
+
+1. Real panel/card/settings creation, Fade default and strip geometry.
+2. Qt-generated wheel events in the left 90% do nothing; right-strip events
+   advance/reverse. Test coordinates account for integer pointer pixel rounding.
+3. Qt-generated mouse drags must start inside the strip to switch.
+4. Real compositor swipe IPC ignores hover outside the strip and works inside.
+5. Real settings ComboBox key events and Save-button clicks persist all presets.
+6. Measured opacity/position/scale during running Fade/Slide/Zoom animations,
+   immediate None transitions, and correct settled states.
+7. Missing-preset live config falls back to Fade; a real rendered card PNG is saved.
+
+An initial offscreen launch failed because PanelWindow has no offscreen backend;
+the required GUI checks therefore use real headless Wayland, not a fake panel.
+qmllint's private-prefix import lookup and upstream type metadata produce import/
+unresolved metadata warnings; it is not claimed as a clean GUI type check. The
+real engine compiled and ran all production components in the tests above.
+The session has no DBus media player: the expected no-bus MPRIS warning and
+no-player fallback were observed; real playback/metadata updates are untested.
+Hardware touch/trackpad gestures and a real Hyprland session remain desktop
+validation items. This adds a minimal GUI, not the previously missing full Part 1
+or a complete third-party widget registry.
