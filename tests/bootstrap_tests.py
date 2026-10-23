@@ -39,6 +39,11 @@ with tempfile.TemporaryDirectory(prefix='swiftly-bootstrap-') as d:
     assert (home/'.config/quickshell/swiftly/SwiftlyBridge.qml').is_file()
     assert cfg.read_bytes()==before
     print('PASS: full-mode real pinned downloads/checksums; mocked desktop/package installation')
+    run('full',hypr,extra={'PATH':str(binpath)+':'+env['PATH']})
+    for name in ['shell.qml','SwiftlyCard.qml','SwiftlySettings.qml','WidgetFace.qml','SwiftlyBridge.qml']:
+        assert (home/'.config/quickshell/swiftly'/name).is_file(),name
+    assert cfg.read_bytes()==before
+    print('PASS: default full-mode real pinned GUI downloads/checksums; config preserved')
     run('bad',success=False)
     run('full',success=False)
     run('full',root/'missing',hypr,success=False)
@@ -52,4 +57,4 @@ with tempfile.TemporaryDirectory(prefix='swiftly-bootstrap-') as d:
     run('config',success=False,extra={'PATH':str(binpath)+':'+env['PATH']})
     assert cfg.read_bytes()==before
     print('PASS: injected corrupted download rejected by SHA256; config preserved and cleanup complete')
-print('RESULT: 5 bootstrap groups passed')
+print('RESULT: 6 bootstrap groups passed')
