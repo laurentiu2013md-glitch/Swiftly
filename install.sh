@@ -20,17 +20,18 @@ main() {
     esac
     command -v curl >/dev/null
     command -v sha256sum >/dev/null
-    local revision=c610947b1513a1c36bda157e01e1f2cce3113f6f
+    local revision=a9f09f5560754c92bb104a5027377f2b1144eac5
     local base="https://raw.githubusercontent.com/laurentiu2013md-glitch/Swiftly/$revision/swiftly"
     temporary=
     temporary=$(mktemp -d)
     # EXIT also cleans up failed downloads and installer failures.
     trap 'rm -rf -- "$temporary"' EXIT
     declare -A hashes=(
+    [uninstall.sh]=ec8d21ff70a7f54c5ef1379e0b81b36b80c5915322f2b1628a1533f1fd389569
     [install-config.sh]=7bcd988aa4ebd20b630857570e7638593db9d5bb7a8372b52d3e8bb0dbcdf96a
     [config.json]=54706dd92753387f96df9466071bf1d6ad2a2f62d6ca37b0c09be8bc781bc59c
-    [install-all.sh]=f06b0f0a3c23130c17f47163d14c1eb52792cd154df0246862ae059ac6b170c9
-    [support.py]=cffdb4637de149f7551a4daa6bb22c8430e3bb638c08ba9c465d5eeb47a5ddc9
+    [install-all.sh]=b36ae3953bb98cfe0e2861a7df14c48186376c46d682bd76fa35c23d20fc52d4
+    [support.py]=ee66b6669bc76c44a1f76d88e1e2ba32f8dbbe8d78f9bc56f3f346715a3f7a0a
     [SwiftlyBridge.qml]=341b3c52b353c5c68c83afb23a2c1f600c66d8145710e7ea3760a38eca829f1b
     [update.sh]=8c33880fab784a61c49593586260750b7f6371cc854ad97d1704a2118dd9ef7f
     [gui/shell.qml]=ccdb2f6fecc3c75c965139eef5949940a5b3728e07ad7f4774de2e79c5665d77
@@ -41,7 +42,7 @@ main() {
     )
     local files=(install-config.sh config.json)
     if [[ $mode = full ]]; then
-        files+=(install-all.sh support.py SwiftlyBridge.qml update.sh)
+        files+=(install-all.sh support.py SwiftlyBridge.qml update.sh uninstall.sh)
         if [[ $# -eq 2 ]]; then
             files+=(gui/shell.qml gui/SwiftlyCard.qml gui/SwiftlySettings.qml gui/WidgetFace.qml gui/SwiftlyPalette.qml)
         fi
