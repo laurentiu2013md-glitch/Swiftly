@@ -357,3 +357,21 @@ python3 tests/gui_tests.py "$PWD" /workspace/scratch/swiftly-cloudtest /workspac
 The GUI suite also has `--network-update` to run the full HTTPS installer/update
 chain twice (explicit path, then recorded no-argument update) with real app/widgets
 and checksums; only Hyprland/pacman/sudo are mocked on Debian.
+
+Full online integration completed successfully after publishing the source and
+refreshed pinned installer: **12 real GUI groups + 2 end-to-end network update
+runs**, and **6 bootstrap groups** passed. The first update downloaded current
+HTTPS files and verified hashes, preserved the exact JSON bytes, installed the
+updater/state, and reloaded the actual app/widgets. The next run executed the
+installed updater with no arguments; it reported `GUI unchanged` and `Gesture
+config unchanged`, then verified a new ready app generation. Another actual
+Quickshell shell remained alive throughout. Only hyprctl/pacman/sudo were mocked;
+downloads, file operations, Quickshell, Wayland and widget reloads were real.
+
+A final visual inspection read the real grim compositor capture from the fully
+updated production GUI (`updated-desktop.png`), not just the instrumented input
+fixture. The idle switcher is absent, the clock/date text and Material settings
+are readable, and no settings/pill clipping was seen. The test retained its
+custom 800 ms duration, demonstrating preservation rather than silently restoring
+defaults. Cloud installation/startup instructions were updated and saved as a
+draft; no environment publication was performed.
