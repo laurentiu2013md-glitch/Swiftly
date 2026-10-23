@@ -176,6 +176,7 @@ with tempfile.TemporaryDirectory(prefix='swiftly-extended-', dir=BUNDLE.parent) 
         state=json.loads(statefile.read_text())
         assert state['hyprlandConfig']==str(hypr) and state['guiDirectory'] is None
         assert (cfgroot/'swiftly/update.sh').is_file()
+        assert (cfgroot/'swiftly/uninstall.sh').read_bytes()==(BUNDLE/'swiftly/uninstall.sh').read_bytes()
         statebytes=statefile.read_bytes()
         for name in ['shell.qml','SwiftlyCard.qml','SwiftlySettings.qml','WidgetFace.qml','SwiftlyPalette.qml','SwiftlyBridge.qml']:
             assert (target/name).is_file(),name

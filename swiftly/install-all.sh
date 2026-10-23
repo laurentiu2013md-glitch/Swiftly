@@ -15,7 +15,7 @@ esac
 [[ -f $gui/shell.qml ]] || die 'GUI_DIRECTORY must contain Part 1 shell.qml.'
 [[ -f $hypr ]] || die 'Pass your actual, existing Hyprland main config.'
 [[ $hypr = *.lua || $hypr = *.conf ]] || die 'Expected .lua or .conf Hyprland config.'
-for file in config.json install-config.sh support.py SwiftlyBridge.qml update.sh; do
+for file in config.json install-config.sh support.py SwiftlyBridge.qml update.sh uninstall.sh; do
     [[ -f $base/$file ]] || die "Missing $base/$file"
 done
 command -v pacman >/dev/null || die 'This installer requires Arch/pacman.'

@@ -173,6 +173,18 @@ with tempfile.TemporaryDirectory(prefix='swiftly-real-',dir=bundle.parent) as d:
             call('probe','clear')
             assert float(call('probe','rawIndex','daily'))==1.0
         test('fractional external initialIndex normalized to integer',fractional)
+        def uninstall():
+            hypr=home/'hyprland.lua'
+            hypr.write_text('-- user\n-- BEGIN SWIFTLY GESTURES\nfixture\n-- END SWIFTLY GESTURES\n')
+            before=cfg.read_bytes()
+            result=subprocess.run(['bash',str(bundle/'swiftly/uninstall.sh'),str(hypr)],
+                env=env | {'PATH':str(qs.parent)+':'+env['PATH']},capture_output=True,text=True,timeout=20)
+            assert result.returncode==0,(result.stdout,result.stderr)
+            wait(lambda:processes[0].poll() is not None)
+            assert call('probe','identity',selected=base)=='base'
+            assert cfg.read_bytes()==before and not path.exists()
+            assert hypr.read_text()=='-- user\n'
+        test('real uninstall stops only Swiftly, preserves settings and unrelated shell',uninstall)
     finally:
         for p in processes:
             p.terminate()

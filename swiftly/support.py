@@ -209,6 +209,7 @@ def main():
         install_gui(gui, target, base / "SwiftlyBridge.qml")
         write(root / "swiftly/support.py", Path(__file__).read_bytes())
         write(root / "swiftly/update.sh", (base / "update.sh").read_bytes())
+        write(root / "swiftly/uninstall.sh", (base / "uninstall.sh").read_bytes())
     if write(hypr, updated.encode()):
         say("Gesture config updated; run hyprctl reload after reviewing it.")
     else:

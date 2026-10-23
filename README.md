@@ -74,6 +74,24 @@ older versions without reload IPC get a restart scoped to Swiftly's config path.
 Other Quickshell shells are left running. Adjust paths for `XDG_CONFIG_HOME`.
 To reload installed files without downloading: `bash ~/.config/swiftly/update.sh --reload-only`.
 
+## Uninstall
+
+```bash
+bash ~/.config/swiftly/uninstall.sh
+```
+
+For older installs, download the standalone script and pass your Hyprland config:
+
+```bash
+curl -fL https://raw.githubusercontent.com/laurentiu2013md-glitch/Swiftly/main/uninstall.sh -o swiftly-uninstall.sh
+bash swiftly-uninstall.sh ~/.config/hypr/hyprland.lua
+```
+
+Use your `.conf` path if appropriate. The script stops only Swiftly, removes its
+managed gesture block, and saves the GUI and changed Hyprland file as backups.
+Settings, previous backups, custom GUI source, and installed system packages stay.
+Add `--purge` to also remove Swiftly's `config.json`. Run `hyprctl reload` afterward.
+
 ## Development and tests
 
 ```bash
@@ -83,6 +101,7 @@ python3 -m compileall -q verify_swiftly.py swiftly/support.py tests
 python3 verify_swiftly.py
 python3 tests/extended_tests.py "$PWD"
 python3 tests/update_tests.py "$PWD"
+python3 tests/uninstall_tests.py "$PWD"
 ```
 
 Debian cloud workspace (official packages extracted privately, no system upgrade):
