@@ -416,3 +416,38 @@ Actual runtime: Quickshell 0.3.2 (Debian distribution), Qt 6.11.2, headless Sway
 user's Arch machine or physical touchpad. The updated production GUI was also
 visually inspected from the real compositor screenshot updated-desktop.png;
 labels and pill controls remain readable without clipping.
+
+### Uninstaller (2026-10-23)
+
+Added standalone `swiftly/uninstall.sh`, a pinned/checksummed public `uninstall.sh`
+entry point, and installation of the standalone script by full installs/updates.
+The default uninstall stops only validated Quickshell PIDs for the Swiftly config
+path, removes the exact managed gesture block in .conf/.lua, atomically updates
+Hyprland config with a backup and preserved mode, and archives the active GUI.
+It removes installed helper/state scripts while preserving JSON settings,
+existing backups, custom GUI source, unrelated files and system packages.
+`--purge` additionally removes only the active config.json. It does not reload
+Hyprland automatically; the output instructs the user to run hyprctl reload.
+
+Checks completed:
+
+```bash
+bash -n install.sh uninstall.sh swiftly/uninstall.sh swiftly/install-all.sh
+python3 -m compileall -q tests swiftly/support.py
+python3 tests/uninstall_tests.py "$PWD"
+python3 verify_swiftly.py
+python3 tests/extended_tests.py "$PWD"
+python3 tests/runtime_tests.py "$PWD" /workspace/scratch/swiftly-cloudtest/bin/qs /workspace/scratch/swiftly-cloudtest/logs/uninstall-bridge
+python3 tests/bootstrap_tests.py "$PWD"
+```
+
+All passed: 8 uninstall mock groups (.conf, .lua, purge, malformed markers,
+unrelated PID rejection, symlink rejection, update lock and config-only), the
+verifier, 26 extended groups, 10 real bridge groups and 6 bootstrap groups.
+The added actual Quickshell 0.3.2 uninstall test starts two independent shells,
+stops Swiftly, verifies the second remains responsive, and checks settings bytes
+and gesture removal. A separate isolated test downloaded public main/uninstall.sh
+through real HTTPS, ran its pinned/checksummed download, and verified preservation
+of custom settings. Bootstrap checks verified the full installer downloads and
+installs uninstall.sh. Package/Hyprland commands remain mocked on Debian;
+physical input and actual Hyprland reload are not claimed.
