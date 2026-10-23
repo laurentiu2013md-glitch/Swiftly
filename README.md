@@ -1,17 +1,27 @@
 # Swiftly
 
 A compact Material 3 widget GUI for Hyprland: clock, date, and media status.
-The card body is transparent and borderless, with no outer padding. Pill labels
-stay visible; the narrow switcher is an overlay that reveals on hover or briefly
-after a switch. It uses the same card window and reserves no content space.
-New cards default to 340 × 144 pixels.
-Choose **Fade**, **Slide**, **Zoom**, or **None** in settings. **Fade is the default.**
+The card body is transparent and borderless, with no outer padding. The right-edge
+switching area is invisible: there are no widget indicator dots or settings button.
+New cards default to 340 × 144 pixels. Choose Fade (default), Slide, Zoom, or None.
 
-Switch widgets by scrolling or starting a swipe in the **rightmost 5% of each
-card**. The rest of the card does not switch. Compositor swipe bindings also
-require the pointer to be over that strip. Tap the rail menu for animation settings;
-changes persist only when you press Save. The read-only area outside the rail
-lets clicks through to the desktop. Media status uses your MPRIS player.
+Click the **rightmost 10%** of a card to switch widgets. Scroll and swipe use the
+same strip when enabled. `interaction.clickEdgeStart` controls where it starts
+(`0.9` means the rightmost 10%; older configs without the field retain 5%).
+The rest of the card lets clicks through to the desktop. Media uses MPRIS.
+
+Open settings while Swiftly is running:
+
+```bash
+qs -p ~/.config/quickshell/swiftly ipc call swiftly settings
+```
+
+Under **Widget size**, type Width and Height in pixels, then press **Save changes**.
+The **Location** section selects a screen corner and inward horizontal/vertical
+offsets. Save applies animation, size, and location together to the selected stack. A stack
+selector appears when more than one stack is enabled. Width accepts 120–8192 px;
+height accepts 100–8192 px. Closing without Save discards the draft. Existing
+widget lists and unrelated configuration fields are preserved.
 
 ## Setup with curl
 
@@ -99,6 +109,7 @@ bash -n install.sh swiftly/update.sh swiftly/install-all.sh swiftly/install-conf
 python3 -m json.tool swiftly/config.json >/dev/null
 python3 -m compileall -q verify_swiftly.py swiftly/support.py tests
 python3 verify_swiftly.py
+python3 tests/size_controls_tests.py
 python3 tests/extended_tests.py "$PWD"
 python3 tests/update_tests.py "$PWD"
 python3 tests/uninstall_tests.py "$PWD"

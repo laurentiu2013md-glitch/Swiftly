@@ -10,6 +10,7 @@
   },
   "interaction": {
     "wrap": true,
+    "clickEdgeStart": 0.9,
     "scrollEnabled": true,
     "scrollInvert": false,
     "swipeEnabled": true,

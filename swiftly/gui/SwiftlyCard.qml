@@ -13,12 +13,9 @@ Rectangle {
     readonly property string preset: bridge.animationPreset
     readonly property int duration: preset === "none" ? 0 : bridge.animationDuration
     readonly property var theme: bridge.config.theme
-    readonly property real switchZoneStart: width * 0.95
+    readonly property real switchZoneStart: width * (Number(bridge.config.interaction.clickEdgeStart) || 0.95)
     readonly property alias switchArea: switching
-    readonly property alias rail: visualRail
     readonly property alias contentArea: content
-    readonly property bool overlayActive: switching.containsMouse || switching.pressed
-            || menuButton.hovered || menuButton.visualFocus || overlayFeedback.running
     property alias widgetRepeater: faces
     signal settingsRequested()
     implicitWidth: 340
@@ -28,8 +25,6 @@ Rectangle {
     border.width: 0
     clip: true
     SwiftlyPalette { id: colors; theme: card.theme }
-    Timer { id: overlayFeedback; interval: 800 }
-    onSelectedIndexChanged: overlayFeedback.restart()
 
     function inSwitchZone(x) { return width > 0 && x >= switchZoneStart && x < width; }
     function scrollAt(x, delta) {
@@ -89,93 +84,23 @@ Rectangle {
         height: card.height
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton
+        cursorShape: Qt.PointingHandCursor
         preventStealing: true
         property real startX: 0
         property real startY: 0
+        property bool swipeHandled: false
         onEntered: card.bridge.pointerStackId = card.stack.id
         onExited: { if (card.bridge.pointerStackId === card.stack.id) card.bridge.pointerStackId = ""; }
-        onPressed: mouse => { startX = mouse.x; startY = mouse.y; }
-        onReleased: mouse => card.swipeFrom(x + startX, mouse.x - startX, mouse.y - startY)
+        onPressed: mouse => { startX = mouse.x; startY = mouse.y; swipeHandled = false; }
+        onReleased: mouse => { swipeHandled = card.swipeFrom(x + startX, mouse.x - startX, mouse.y - startY); }
+        onClicked: { if (!swipeHandled) card.bridge.step(card.stack.id, 1); }
         onWheel: wheel => {
             const delta = wheel.angleDelta.y || wheel.angleDelta.x || wheel.pixelDelta.y || wheel.pixelDelta.x;
             if (!wheelCooldown.running && card.scrollAt(x + wheel.x, delta)) wheelCooldown.start();
             wheel.accepted = !!card.bridge.config.interaction.scrollEnabled;
         }
         Timer { id: wheelCooldown; interval: 140 }
-        Rectangle {
-            id: visualRail
-            anchors.centerIn: parent
-            width: parent.width
-            height: Math.min(card.height, Math.max(64, indicators.implicitHeight + 40))
-            radius: width / 2
-            color: switching.containsMouse || menuButton.hovered ? colors.primaryContainer : colors.containerHigh
-            opacity: card.overlayActive ? 1 : 0
-            Behavior on color { ColorAnimation { duration: 160 } }
-            Behavior on opacity { NumberAnimation { duration: 160 } }
-            Column {
-                id: indicators
-                anchors.top: parent.top
-                anchors.topMargin: 10
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 5
-                Repeater {
-                    model: card.widgets.length
-                    Rectangle {
-                        required property int index
-                        width: 3
-                        height: index === card.selectedIndex ? 12 : 3
-                        radius: width / 2
-                        color: index === card.selectedIndex ? colors.primary : colors.muted
-                        opacity: index === card.selectedIndex ? 1 : 0.45
-                        Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-                    }
-                }
-            }
-        }
-        M3.ToolButton {
-            id: menuButton
-            objectName: "cardSettings"
-            anchors.horizontalCenter: visualRail.horizontalCenter
-            y: visualRail.y + visualRail.height - height
-            width: switching.width
-            height: 32
-            padding: 0
-            text: "⋮"
-            font.pixelSize: 16
-            opacity: visualRail.opacity
-            Accessible.name: "Open Swiftly settings"
-            contentItem: Label { text: menuButton.text; color: colors.foreground; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font: menuButton.font }
-            background: Item {
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: visualRail.width
-                    height: 28
-                    radius: width / 2
-                    color: colors.primary
-                    opacity: menuButton.down ? 0.24 : menuButton.hovered || menuButton.visualFocus ? 0.12 : 0
-                }
-            }
-            onClicked: card.settingsRequested()
-            onHoveredChanged: {
-                if (hovered) card.bridge.pointerStackId = card.stack.id;
-                else if (!switching.containsMouse && card.bridge.pointerStackId === card.stack.id) card.bridge.pointerStackId = "";
-            }
-            // A drag over the menu still switches; an ordinary tap opens settings.
-            DragHandler {
-                target: null
-                property real startX: 0
-                property point lastDelta: Qt.point(0, 0)
-                onActiveTranslationChanged: lastDelta = activeTranslation
-                onActiveChanged: {
-                    if (active) {
-                        startX = card.switchZoneStart + menuButton.x + centroid.pressPosition.x;
-                        lastDelta = activeTranslation;
-                    } else {
-                        card.swipeFrom(startX, lastDelta.x, lastDelta.y);
-                    }
-                }
-            }
-        }
+
     }
     Component.onDestruction: {
         if (bridge.pointerStackId === stack.id) bridge.pointerStackId = "";
