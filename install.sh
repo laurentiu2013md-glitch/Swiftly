@@ -20,7 +20,7 @@ main() {
     esac
     command -v curl >/dev/null
     command -v sha256sum >/dev/null
-    local revision=98d250c8382615f5b14db8a3602b8d367b87b148
+    local revision=8ba3838d02f7969d5651ac66cefc96b7cec6a083
     local base="https://raw.githubusercontent.com/laurentiu2013md-glitch/Swiftly/$revision/swiftly"
     temporary=
     temporary=$(mktemp -d)
@@ -28,20 +28,21 @@ main() {
     trap 'rm -rf -- "$temporary"' EXIT
     declare -A hashes=(
     [install-config.sh]=7bcd988aa4ebd20b630857570e7638593db9d5bb7a8372b52d3e8bb0dbcdf96a
-    [config.json]=696570a48b7c582e02546c75ec02897d6fa69c070bad2400055e3825be676f07
+    [config.json]=54706dd92753387f96df9466071bf1d6ad2a2f62d6ca37b0c09be8bc781bc59c
     [install-all.sh]=c372277116fc264f8859a37bdc3a6d38eb1ab812c08e4aa3d4a8cec1c6f06584
     [support.py]=e2d4a356fc2fe7a97b97f5e85f4e08b12d5dd3a145d4fd0e9a6c927c1b13498a
     [SwiftlyBridge.qml]=6fb7849cd209c2b4ef599d4343d25cc14f34bff47f51b63f0e7783914684822c
-    [gui/shell.qml]=bb160e58cfa93c620f3fae844282775d11508dd7da4fa863d89a2e806e200b04
-    [gui/SwiftlyCard.qml]=daa152ada91875b4d3be0dee99a02487c460dfe761970685b29ea11639c558f9
-    [gui/SwiftlySettings.qml]=408076260d1d96c8d6be155652c0308392b5ff2995e058041d3f84a28cfe5976
-    [gui/WidgetFace.qml]=2c8893b501f9a1c5080be760297bcf59747d88b903d21e8fa8c6333ef020cd53
+    [gui/shell.qml]=839bf63fc11787c47a22e141e173c6cd047ffb164369d4686ddeb3af43e4b56c
+    [gui/SwiftlyCard.qml]=57bd7b487d0386a0b5ed5419b3ac28a39261ad18b07124e7101dfddad31388bf
+    [gui/SwiftlySettings.qml]=7f011819af6ebd41327d3caeab91fc3ea50dccef94a113f258e06ddf067b8ffb
+    [gui/WidgetFace.qml]=e2901f33c7e969a6075d1ebc5f5ae7d0d300839e785585912f723d2d791e652f
+    [gui/SwiftlyPalette.qml]=ec3cb86ab36e3f3c756caee95b659b5901a7dd94845bbeb9bee7c2e149791c29
     )
     local files=(install-config.sh config.json)
     if [[ $mode = full ]]; then
         files+=(install-all.sh support.py SwiftlyBridge.qml)
         if [[ $# -eq 2 ]]; then
-            files+=(gui/shell.qml gui/SwiftlyCard.qml gui/SwiftlySettings.qml gui/WidgetFace.qml)
+            files+=(gui/shell.qml gui/SwiftlyCard.qml gui/SwiftlySettings.qml gui/WidgetFace.qml gui/SwiftlyPalette.qml)
         fi
     fi
     local file

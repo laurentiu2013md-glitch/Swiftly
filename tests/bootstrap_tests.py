@@ -40,7 +40,7 @@ with tempfile.TemporaryDirectory(prefix='swiftly-bootstrap-') as d:
     assert cfg.read_bytes()==before
     print('PASS: full-mode real pinned downloads/checksums; mocked desktop/package installation')
     run('full',hypr,extra={'PATH':str(binpath)+':'+env['PATH']})
-    for name in ['shell.qml','SwiftlyCard.qml','SwiftlySettings.qml','WidgetFace.qml','SwiftlyBridge.qml']:
+    for name in ['shell.qml','SwiftlyCard.qml','SwiftlySettings.qml','WidgetFace.qml','SwiftlyPalette.qml','SwiftlyBridge.qml']:
         assert (home/'.config/quickshell/swiftly'/name).is_file(),name
     assert cfg.read_bytes()==before
     print('PASS: default full-mode real pinned GUI downloads/checksums; config preserved')
