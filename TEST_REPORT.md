@@ -258,3 +258,12 @@ no-player fallback were observed; real playback/metadata updates are untested.
 Hardware touch/trackpad gestures and a real Hyprland session remain desktop
 validation items. This adds a minimal GUI, not the previously missing full Part 1
 or a complete third-party widget registry.
+
+The curl entry point now supports `full HYPRLAND_CONFIG` for the bundled GUI
+and preserves `full GUI_DIRECTORY HYPRLAND_CONFIG` for a custom GUI. It pins
+source commit `98d250c` and checks every downloaded GUI/bridge/install file.
+`python3 tests/bootstrap_tests.py "$PWD"` passed **6 groups**, including real
+HTTPS downloads/checksums for both full modes, config preservation, argument
+errors, and injected HTTP/corrupted-artifact failure handling. The GUI/cloud
+installation and startup instructions were saved to the environment draft; no
+environment publication or future-task restoration validation was performed.
