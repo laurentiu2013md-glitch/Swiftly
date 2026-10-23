@@ -296,4 +296,6 @@ Also passed: Bash syntax, JSON parsing, Python compilation, the supplied verifie
 Qt 6.11.2, Quickshell 0.3.2 and Sway 1.12. No physical gesture/media-playback
 claims are added. Historical 10%/ComboBox descriptions above document prior
 versions; the current GUI uses 5% and preset pills. The new palette component is
-part of the bundle and must be included in the curl installer's pinned manifest.
+included in the curl installer's pinned manifest. The refreshed installer passed
+all **6 bootstrap groups** with real HTTPS downloads and SHA256 verification
+for the redesigned bundled GUI, plus the existing failure/preservation checks.
