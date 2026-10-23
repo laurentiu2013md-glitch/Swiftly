@@ -20,7 +20,7 @@ main() {
     esac
     command -v curl >/dev/null
     command -v sha256sum >/dev/null
-    local revision=a9f09f5560754c92bb104a5027377f2b1144eac5
+    local revision=ab49911cc497188d96a8f3ebad943d04c902ed0b
     local base="https://raw.githubusercontent.com/laurentiu2013md-glitch/Swiftly/$revision/swiftly"
     temporary=
     temporary=$(mktemp -d)
@@ -29,14 +29,14 @@ main() {
     declare -A hashes=(
     [uninstall.sh]=ec8d21ff70a7f54c5ef1379e0b81b36b80c5915322f2b1628a1533f1fd389569
     [install-config.sh]=7bcd988aa4ebd20b630857570e7638593db9d5bb7a8372b52d3e8bb0dbcdf96a
-    [config.json]=54706dd92753387f96df9466071bf1d6ad2a2f62d6ca37b0c09be8bc781bc59c
+    [config.json]=e893c201f5227a5282534d5045ef51753b074887a64cd63a38ec32172e4a1b74
     [install-all.sh]=b36ae3953bb98cfe0e2861a7df14c48186376c46d682bd76fa35c23d20fc52d4
     [support.py]=ee66b6669bc76c44a1f76d88e1e2ba32f8dbbe8d78f9bc56f3f346715a3f7a0a
-    [SwiftlyBridge.qml]=341b3c52b353c5c68c83afb23a2c1f600c66d8145710e7ea3760a38eca829f1b
+    [SwiftlyBridge.qml]=ab57f35f13dac83b0556bc2093fc4e338c9fd726927ff1e3ea1fe1b28c2fbd61
     [update.sh]=8c33880fab784a61c49593586260750b7f6371cc854ad97d1704a2118dd9ef7f
     [gui/shell.qml]=ccdb2f6fecc3c75c965139eef5949940a5b3728e07ad7f4774de2e79c5665d77
-    [gui/SwiftlyCard.qml]=23ef56dc0ac2624aad749dc3706b2430d8458f81bd39bc5f31fef2736859d8d0
-    [gui/SwiftlySettings.qml]=7f011819af6ebd41327d3caeab91fc3ea50dccef94a113f258e06ddf067b8ffb
+    [gui/SwiftlyCard.qml]=fcfdc9d20f2752ea03ab3b438b399702e636167ea3d67970a1f46aa49e9e85bb
+    [gui/SwiftlySettings.qml]=e2c387bc3519f30626151acfa1eb1622805cdc292db0bb643d17144fd28a1e16
     [gui/WidgetFace.qml]=e2901f33c7e969a6075d1ebc5f5ae7d0d300839e785585912f723d2d791e652f
     [gui/SwiftlyPalette.qml]=ec3cb86ab36e3f3c756caee95b659b5901a7dd94845bbeb9bee7c2e149791c29
     )
