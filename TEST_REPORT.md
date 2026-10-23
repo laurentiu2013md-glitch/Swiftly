@@ -299,3 +299,61 @@ versions; the current GUI uses 5% and preset pills. The new palette component is
 included in the curl installer's pinned manifest. The refreshed installer passed
 all **6 bootstrap groups** with real HTTPS downloads and SHA256 verification
 for the redesigned bundled GUI, plus the existing failure/preservation checks.
+
+## Overlay-only switcher and updater follow-up
+
+The switcher is now an overlay inside each existing widget card. Widget content
+uses 100% of the card width; no side column or separate switcher surface is
+created. The overlay is invisible when idle, appears on hover/focus, and briefly
+after a selection changes. The rightmost 5% remains the input region.
+
+`swiftly/update.sh` is a standalone Bash/Python updater. Full installation records
+the Hyprland config/custom GUI source in install-state.json and installs the
+updater outside the replaceable GUI tree. It fetches the current verified
+installer, applies it with config/backups preserved, calls the app's reload IPC,
+and waits for a different generation with widget creation readiness. It starts
+a stopped app; a legacy shell is restarted only after exact config-path/PID
+validation. A lock prevents concurrent updaters. `--reload-only` skips network
+installation. Hard reload recreates widgets and resets transient selection.
+
+A real test exposed a transient `Not ready to accept queries yet` reply while
+source files were changing. The updater now retries that state instead of
+misclassifying it as a legacy app and stopping it. A regression test covers this
+race. Download/installer failures do not request an explicit reload, and unrelated
+Quickshell instances are never selected for restart.
+
+Passed: the supplied verifier, **20 extended installer groups**, **8 bridge runtime
+groups**, **9 updater mock groups**, and **12 real GUI groups**. The expanded GUI
+suite uses real Sway/Wayland/Quickshell, verifies full-width/idle-hidden/hover
+overlay behavior in a single panel, changes actual widget QML on disk, runs the
+production updater to load that new code in the same app process, checks exact
+JSON preservation, starts the stopped app, and keeps another real shell alive.
+The updater's mock suite separately exercises failed HTTP/install commands, busy
+IPC, malformed saved state, lock contention and rejecting an unrelated PID/path.
+
+The private official-package runtime now includes **264** verified packages,
+adding **grim 1.5.0+ds-1** for compositor screenshots. Core versions remain
+Quickshell 0.3.2, Qt 6.11.2 and Sway 1.12. Runtime packages were refreshed before
+final validation; no system installation or signature/checksum bypass was used.
+
+Visual inspection used the actual compositor desktop capture plus rendered idle
+card, hover-overlay card and settings PNGs. The idle view has no detached rail;
+the hover indicator/menu overlays the same card, and settings labels/pill buttons
+are readable without clipping at the tested 1280×720 output. These are genuine
+application renders, not generated mockups. The fixture has no DBus media player,
+so the visible no-player state is expected. Physical input/playback and actual
+Hyprland configuration reload remain desktop validation items.
+
+Commands:
+
+```bash
+bash -n install.sh swiftly/update.sh swiftly/install-all.sh
+python3 tests/update_tests.py "$PWD"
+python3 tests/extended_tests.py "$PWD"
+python3 tests/runtime_tests.py "$PWD" /workspace/scratch/swiftly-cloudtest/bin/qs /workspace/scratch/swiftly-cloudtest/logs/overlay-bridge
+python3 tests/gui_tests.py "$PWD" /workspace/scratch/swiftly-cloudtest /workspace/scratch/swiftly-cloudtest/logs/overlay-gui
+```
+
+The GUI suite also has `--network-update` to run the full HTTPS installer/update
+chain twice (explicit path, then recorded no-argument update) with real app/widgets
+and checksums; only Hyprland/pacman/sudo are mocked on Debian.

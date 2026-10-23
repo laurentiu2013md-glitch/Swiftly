@@ -10,6 +10,8 @@ Scope {
     // The bundled GUI enables this gate for compositor swipe IPC too.
     property bool requirePointerZone: false
     property string pointerStackId: ""
+    property bool widgetsReady: true
+    readonly property string generation: Date.now().toString(36) + "-" + Math.random().toString(36).slice(2)
     readonly property var animationPresets: ["fade", "slide", "zoom", "none"]
     readonly property string animationPreset: animationPresets.indexOf(adapter.interaction.animationPreset) >= 0
             ? adapter.interaction.animationPreset : "fade"
@@ -80,6 +82,15 @@ Scope {
         function previous(stackId: string): void { bridge.step(stackId, -1); }
         function index(stackId: string): int { return bridge.indexFor(stackId); }
         function settings(): void { bridge.settingsRequested(); }
+        function status(): string {
+            return JSON.stringify({generation: bridge.generation,
+                ready: adapter.stacks.length > 0 && bridge.widgetsReady,
+                stacks: adapter.stacks.map(s => ({id: s.id, widgets: (s.widgets || []).length}))});
+        }
+        function reload(): string {
+            Qt.callLater(() => Quickshell.reload(true));
+            return "reloading";
+        }
         function swipe(direction: string, fingers: int): void {
             const g = adapter.gestures;
             // Stale compositor bindings are ignored until the helper is rerun.

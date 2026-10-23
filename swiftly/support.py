@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Install Part 1 assets and/or sync a single managed Hyprland gesture block."""
+"""Install GUI assets and/or sync a single managed Hyprland gesture block."""
 import argparse
 import json
 import os
@@ -121,6 +121,7 @@ def main():
     parser.add_argument("hypr", type=Path)
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--gestures-only", action="store_true")
+    parser.add_argument("--bundled-gui", action="store_true")
     args = parser.parse_args()
     root = Path(os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config"))
     if not root.is_absolute():
@@ -203,10 +204,15 @@ def main():
     if not args.gestures_only:
         install_gui(gui, target, base / "SwiftlyBridge.qml")
         write(root / "swiftly/support.py", Path(__file__).read_bytes())
+        write(root / "swiftly/update.sh", (base / "update.sh").read_bytes())
     if write(hypr, updated.encode()):
         say("Gesture config updated; run hyprctl reload after reviewing it.")
     else:
         say("Gesture config unchanged.")
+    if not args.gestures_only:
+        state = {"schemaVersion": 1, "hyprlandConfig": str(hypr),
+                 "guiDirectory": None if args.bundled_gui else str(gui)}
+        write(root / "swiftly/install-state.json", (json.dumps(state, indent=2) + "\n").encode())
 
 
 if __name__ == "__main__":

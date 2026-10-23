@@ -25,7 +25,9 @@ $XDG_CONFIG_HOME/quickshell/swiftly and injects SwiftlyBridge.qml.
 ## Bundled GUI
 
 The body is transparent and borderless, with no outer content padding. The
-visible rail and pointer switching area both occupy the rightmost 5%; the left
+switching overlay uses the rightmost 5%, hides when idle and reveals on hover
+or briefly after switching; it shares the widget window and reserves no side
+column. The pointer switching area occupies the rightmost 5%; the left
 95% is a click-through, read-only widget display. Material 3 tonal pills, preset
 buttons and a duration slider provide settings. New cards default to 340×144;
 existing configured dimensions/colors are preserved. The menu supports taps
@@ -257,3 +259,26 @@ session and physical gesture hardware are not supplied.
 No full GUI, compositor parsing/reload or hardware gesture validation is claimed.
 Direct documentation sites were proxy-blocked; current official documentation
 sources were checked through their GitHub mirrors. See ../TEST_REPORT.md.
+
+## Automatic reload after updating
+
+Full installs record their Hyprland config and optional custom GUI source in
+$XDG_CONFIG_HOME/swiftly/install-state.json, and install update.sh beside it.
+Run `bash ~/.config/swiftly/update.sh` to fetch the latest verified bundle and
+reload the app/widgets. Older installs need the Hyprland config path once; giving
+a path explicitly selects the bundled GUI. For a custom GUI, reinstall once with
+`install-all.sh GUI_DIRECTORY HYPRLAND_CONFIG` to record that source, then omit
+paths when updating. State and config live outside the replaceable GUI tree.
+
+`--reload-only` skips downloading. Reload IPC uses Quickshell.reload(true), waits
+for a new generation and real widget readiness, and preserves JSON. Selections
+are transient and reset to initialIndex on hard reload. A brief busy-IPC response
+is retried; it does not trigger a legacy restart. An old shell without reload
+IPC is restarted only after matching its exact config path and PID. No global
+pkill or all-shell kill is used. A stopped app is started with no-duplicate mode.
+
+A failed download stops before installation. Installation retains its documented
+nontransactional behavior; a failure is reported without an explicit reload, and
+existing backups remain available. Gesture changes still need review and a
+Hyprland reload; the updater reloads the app/widgets. Custom GUIs can bind the
+bridge's widgetsReady property to their own widget creation readiness.

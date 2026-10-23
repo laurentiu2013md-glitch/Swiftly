@@ -143,11 +143,17 @@ with tempfile.TemporaryDirectory(prefix='swiftly-extended-', dir=BUNDLE.parent) 
             assert result.returncode==0,(result.stdout,result.stderr)
         install()
         target=cfgroot/'quickshell/swiftly'
+        statefile=cfgroot/'swiftly/install-state.json'
+        state=json.loads(statefile.read_text())
+        assert state['hyprlandConfig']==str(hypr) and state['guiDirectory'] is None
+        assert (cfgroot/'swiftly/update.sh').is_file()
+        statebytes=statefile.read_bytes()
         for name in ['shell.qml','SwiftlyCard.qml','SwiftlySettings.qml','WidgetFace.qml','SwiftlyPalette.qml','SwiftlyBridge.qml']:
             assert (target/name).is_file(),name
         assert cfg.read_bytes()==before
         backups=sorted(str(p) for p in target.parent.glob('swiftly.bak.*'))
         install()
+        assert statefile.read_bytes()==statebytes
         assert backups==sorted(str(p) for p in target.parent.glob('swiftly.bak.*'))
     test('bundled GUI default install preserves config and is idempotent',bundled_gui)
 

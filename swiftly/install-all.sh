@@ -6,15 +6,16 @@ trap 'printf "[Swiftly] ERROR at line %s; stopping.\n" "$LINENO" >&2' ERR
 die() { printf '[Swiftly] %s\n' "$*" >&2; exit 1; }
 [[ $EUID -ne 0 ]] || die 'Run as your normal user; sudo is used only for pacman.'
 base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+gui_flags=()
 case $# in
-    1) gui=$base/gui; hypr=$1 ;;
+    1) gui=$base/gui; hypr=$1; gui_flags+=(--bundled-gui) ;;
     2) gui=$1; hypr=$2 ;;
     *) die 'Usage: bash install-all.sh [GUI_DIRECTORY] HYPRLAND_MAIN_CONFIG' ;;
 esac
 [[ -f $gui/shell.qml ]] || die 'GUI_DIRECTORY must contain Part 1 shell.qml.'
 [[ -f $hypr ]] || die 'Pass your actual, existing Hyprland main config.'
 [[ $hypr = *.lua || $hypr = *.conf ]] || die 'Expected .lua or .conf Hyprland config.'
-for file in config.json install-config.sh support.py SwiftlyBridge.qml; do
+for file in config.json install-config.sh support.py SwiftlyBridge.qml update.sh; do
     [[ -f $base/$file ]] || die "Missing $base/$file"
 done
 command -v pacman >/dev/null || die 'This installer requires Arch/pacman.'
@@ -45,8 +46,8 @@ fi
 command -v qs >/dev/null || die 'Quickshell installation did not provide qs.'
 qs --version
 # Preflight validates config, version, paths and managed-block boundaries.
-python3 "$base/support.py" "$gui" "$hypr" --check
+python3 "$base/support.py" "$gui" "$hypr" "${gui_flags[@]}" --check
 bash "$base/install-config.sh"
-python3 "$base/support.py" "$gui" "$hypr"
+python3 "$base/support.py" "$gui" "$hypr" "${gui_flags[@]}"
 printf '[Swiftly] Ready. Start with: qs -p "%s/quickshell/swiftly"\n' \
     "${XDG_CONFIG_HOME:-$HOME/.config}"

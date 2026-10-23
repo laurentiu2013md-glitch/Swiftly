@@ -8,14 +8,18 @@ ShellRoot {
     SwiftlyBridge {
         id: runtimeBridge
         requirePointerZone: true
+        widgetsReady: widgetPanels.instances.length === config.stacks.filter(s => s.enabled).length
+                && widgetPanels.instances.every(p => p.widgetView.widgetRepeater.count === (p.modelData.widgets || []).length)
         onSettingsRequested: settings.visible = true
     }
     SwiftlySettings { id: settings; bridge: runtimeBridge }
     Variants {
+        id: widgetPanels
         model: runtimeBridge.config.stacks.filter(stack => stack.enabled)
         delegate: PanelWindow {
             id: panel
             required property var modelData
+            readonly property alias widgetView: widgetCard
             readonly property var position: modelData.position || {}
             readonly property string anchor: position.anchor || "top-right"
             screen: Quickshell.screens.find(screen => screen.name === modelData.monitor) || Quickshell.screens[0]

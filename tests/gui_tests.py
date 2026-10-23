@@ -15,7 +15,7 @@ import time
 repo=Path(sys.argv[1]).resolve()
 cloud=Path(sys.argv[2]).resolve()
 logs=Path(sys.argv[3]).resolve();logs.mkdir(parents=True,exist_ok=True)
-for old in [logs/'card.png',logs/'settings.png']: old.unlink(missing_ok=True)
+for old in [logs/'card.png',logs/'card-overlay.png',logs/'settings.png',logs/'desktop.png']: old.unlink(missing_ok=True)
 def png_ready(path):
     if not path.exists(): return False
     data=path.read_bytes()
@@ -30,57 +30,62 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
     default=json.loads((repo/'swiftly/config.json').read_text())
     cfg.write_text(json.dumps(default))
     xdg=root/'runtime';xdg.mkdir(mode=0o700)
-    gui=root/'gui';shutil.copytree(repo/'swiftly/gui',gui)
+    gui=config/'quickshell/swiftly';gui.parent.mkdir(parents=True);shutil.copytree(repo/'swiftly/gui',gui)
     shutil.copy2(repo/'swiftly/SwiftlyBridge.qml',gui/'SwiftlyBridge.qml')
+    facefile=gui/'WidgetFace.qml'
+    facefile.write_text(facefile.read_text().replace('id: face','id: face\n    readonly property string testRevision: "before"',1))
     cardfile=gui/'SwiftlyCard.qml'
     cardfile.write_text(cardfile.read_text().replace('id: card','id: card\n    readonly property alias testColors: colors',1))
     shell=(gui/'shell.qml').read_text()
     shell=shell.replace('import Quickshell\n','import Quickshell\nimport Quickshell.Io\nimport QtTest\n')
-    shell=shell.replace('    Variants {','    Variants {\n        id: testPanels')
     shell=shell.replace('required property var modelData','readonly property alias testCard: widgetCard\n            required property var modelData')
     probe='''
     TestCase {
         id: input
         name: "GuiInput"
         when: false
-        parent: testPanels.instances.length ? testPanels.instances[0].testCard : null
+        parent: widgetPanels.instances.length ? widgetPanels.instances[0].testCard : null
     }
     IpcHandler {
         target: "guiTest"
         function state(): string {
-            const card = testPanels.instances[0].testCard;
+            const card = widgetPanels.instances[0].testCard;
             const faces = [];
             for (let i=0; i<card.widgetRepeater.count; i++) {
                 const face=card.widgetRepeater.itemAt(i);
-                faces.push({opacity:face.opacity, x:face.x, scale:face.scale});
+                faces.push({revision:face.testRevision,opacity:face.opacity, x:face.x, scale:face.scale});
             }
-            return JSON.stringify({index:card.selectedIndex,width:card.width,zone:card.switchArea.x,zoneWidth:card.switchArea.width,railWidth:card.rail.width,masked:testPanels.instances[0].mask.item===card.switchArea,bodyAlpha:card.color.a,contentX:card.contentArea.x,contentY:card.contentArea.y,contentWidth:card.contentArea.width,contentHeight:card.contentArea.height,preset:card.preset,duration:card.duration,faces:faces,hover:runtimeBridge.pointerStackId,settingsVisible:settings.visible,status:settings.status,sourceForeground:card.testColors.theme.foreground,actualForeground:card.testColors.foreground.toString(),titleColor:input.findChild(settings.contentItem,"settingsHeading").color.toString(),presetFill:input.findChild(settings.contentItem,"preset-0").background.color.toString()});
+            return JSON.stringify({index:card.selectedIndex,width:card.width,zone:card.switchArea.x,zoneWidth:card.switchArea.width,railWidth:card.rail.width,masked:widgetPanels.instances[0].mask.item===card.switchArea,bodyAlpha:card.color.a,contentX:card.contentArea.x,contentY:card.contentArea.y,contentWidth:card.contentArea.width,contentHeight:card.contentArea.height,preset:card.preset,duration:card.duration,faces:faces,hover:runtimeBridge.pointerStackId,settingsVisible:settings.visible,generation:runtimeBridge.generation,overlayAlpha:card.rail.opacity,panelCount:widgetPanels.instances.length,status:settings.status,sourceForeground:card.testColors.theme.foreground,actualForeground:card.testColors.foreground.toString(),titleColor:input.findChild(settings.contentItem,"settingsHeading").color.toString(),presetFill:input.findChild(settings.contentItem,"preset-0").background.color.toString()});
         }
-        function wheel(x: real, delta: int): void { input.mouseWheel(testPanels.instances[0].testCard,x,80,0,delta); }
-        function move(x: real): void { input.mouseMove(testPanels.instances[0].testCard,x,80); }
-        function drag(x: real, dx: real): void { input.mouseDrag(testPanels.instances[0].testCard,x,80,dx,0); }
+        function setAutoReload(enabled: bool): void { Quickshell.watchFiles = enabled; }
+        function wheel(x: real, delta: int): void { input.mouseWheel(widgetPanels.instances[0].testCard,x,80,0,delta); }
+        function move(x: real): void { input.mouseMove(widgetPanels.instances[0].testCard,x,80); }
+        function drag(x: real, dx: real): void { input.mouseDrag(widgetPanels.instances[0].testCard,x,80,dx,0); }
         function selectPreset(index: int): void {
             const button=input.findChild(settings.contentItem,"preset-"+index);
             input.mouseClick(button);
         }
-        function openSettings(): void { const button=input.findChild(testPanels.instances[0].testCard,"cardSettings"); input.mouseClick(button); }
+        function openSettings(): void { const button=input.findChild(widgetPanels.instances[0].testCard,"cardSettings"); input.mouseClick(button); }
         function durationZero(): void { const slider=input.findChild(settings.contentItem,"animationDuration"); input.mouseClick(slider,slider.leftPadding,slider.height/2); }
         function save(): void { const button=input.findChild(settings.contentItem,"saveAnimation"); input.mouseClick(button); }
         function settingsScreenshot(path: string): void { settings.contentItem.grabToImage(result => result.saveToFile(path)); }
         function closeSettings(): void { settings.close(); }
-        function screenshot(path: string): void { testPanels.instances[0].testCard.grabToImage(result => result.saveToFile(path)); }
+        function screenshot(path: string): void { widgetPanels.instances[0].testCard.grabToImage(result => result.saveToFile(path)); }
     }
 '''
     (gui/'shell.qml').write_text(shell.rsplit('}',1)[0]+probe+'}\n')
     swayconfig=root/'sway.conf'
     swayconfig.write_text('output * mode 1280x720\nseat * hide_cursor 0\nxwayland disable\nswaybg_command -\n')
-    env=dict(os.environ,HOME=str(home),XDG_CONFIG_HOME=str(config),XDG_RUNTIME_DIR=str(xdg),WLR_BACKENDS='headless',WLR_RENDERER='pixman',WLR_LIBINPUT_NO_DEVICES='1',QT_QPA_PLATFORM='wayland',QT_QUICK_BACKEND='software',QT_QUICK_CONTROLS_STYLE='Basic',XDG_CURRENT_DESKTOP='sway')
+    env=dict(os.environ,HOME=str(home),XDG_CONFIG_HOME=str(config),XDG_RUNTIME_DIR=str(xdg),WLR_BACKENDS='headless',WLR_RENDERER='pixman',WLR_LIBINPUT_NO_DEVICES='1',QT_QPA_PLATFORM='wayland',QT_QUICK_BACKEND='software',QT_QUICK_CONTROLS_STYLE='Basic',XDG_CURRENT_DESKTOP='sway',PATH=str(cloud/'bin')+':'+os.environ.get('PATH',''))
     # Sway's dlopened wlroots must resolve against the private library set too.
     swayenv=dict(env,LD_LIBRARY_PATH=str(libs))
     # This test config disables optional Xwayland/background subprocesses.
     swaycmd=[str(loader),'--library-path',str(libs),str(runtime/'usr/bin/sway'),'--unsupported-gpu','-c',str(swayconfig)]
     swaylog=(logs/'sway.log').open('w');qslog=(logs/'quickshell.log').open('w')
-    sway=None;qs=None
+    sway=None;qs=None;other=None
+    othergui=root/'other-shell';othergui.mkdir()
+    (othergui/'shell.qml').write_text('import Quickshell\nimport Quickshell.Io\nShellRoot { IpcHandler { target: "other"; function ping(): string { return "alive"; } } }\n')
+    otherlog=(logs/'other-shell.log').open('w')
     def wait(fn,timeout=10):
         end=time.monotonic()+timeout;last=None
         while time.monotonic()<end:
@@ -89,8 +94,8 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
             except Exception as e:last=e
             time.sleep(.06)
         raise AssertionError(('timeout',last))
-    def call(target,function,*args):
-        p=subprocess.run([str(cloud/'bin/qs'),'-p',str(gui),'ipc','call',target,function,*map(str,args)],env=env,capture_output=True,text=True,timeout=15)
+    def call(target,function,*args,selected=gui):
+        p=subprocess.run([str(cloud/'bin/qs'),'-p',str(selected),'ipc','call',target,function,*map(str,args)],env=env,capture_output=True,text=True,timeout=15)
         assert p.returncode==0,(p.stdout,p.stderr)
         assert not p.stderr,(p.stdout,p.stderr)
         return p.stdout.strip()
@@ -101,12 +106,15 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
         sway=subprocess.Popen(swaycmd,env=swayenv,stdout=swaylog,stderr=subprocess.STDOUT)
         wait(lambda:any(p.is_socket() for p in xdg.glob('wayland-*')))
         env['WAYLAND_DISPLAY']=next(p.name for p in xdg.glob('wayland-*') if not p.name.endswith('.lock'))
+        other=subprocess.Popen([str(cloud/'bin/qs'),'-p',str(othergui)],env=env,stdout=otherlog,stderr=subprocess.STDOUT)
+        wait(lambda:call('other','ping',selected=othergui)=='alive')
         qs=subprocess.Popen([str(cloud/'bin/qs'),'-p',str(gui)],env=env,stdout=qslog,stderr=subprocess.STDOUT)
         wait(lambda:state()['width']>0)
         s=state();assert s['preset']=='fade' and s['index']==0
         assert abs(s['zone']-s['width']*.95)<.01 and abs(s['zoneWidth']-s['width']*.05)<.01
+        assert s['panelCount']==1
         assert abs(s['railWidth']-s['width']*.05)<.01 and s['bodyAlpha']==0 and s['masked']
-        assert s['contentX']==0 and s['contentY']==0 and abs(s['contentWidth']-s['width']*.95)<.01
+        assert s['contentX']==0 and s['contentY']==0 and abs(s['contentWidth']-s['width'])<.01
         print('PASS: production panel/card/settings loaded on real headless Wayland; Fade default; strip geometry',flush=True)
         width=s['width']
         for x in [10,width*.5,width*.95-1]:
@@ -127,6 +135,10 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
         assert state()['titleColor']=='#'+default['theme']['foreground'][-6:].lower()
         assert state()['actualForeground']==state()['titleColor']
         call('guiTest','settingsScreenshot',str(logs/'settings.png'));wait(lambda:png_ready(logs/'settings.png'))
+        grim=runtime/'usr/bin/grim'
+        if grim.exists():
+            time.sleep(.08)
+            subprocess.run([str(loader),'--library-path',str(libs),str(grim),str(logs/'desktop.png')],env=env,check=True,timeout=10)
         before=cfg.read_bytes()
         call('guiTest','selectPreset',1);call('guiTest','closeSettings')
         wait(lambda:not state()['settingsVisible']);assert cfg.read_bytes()==before
@@ -159,13 +171,66 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
         value=json.loads(cfg.read_text());value['interaction'].pop('animationPreset');save_config(value)
         wait(lambda:state()['preset']=='fade')
         wait(lambda:state()['faces'][state()['index']]['opacity']==1)
+        call('guiTest','move',width*.5);wait(lambda:state()['overlayAlpha']==0)
         call('guiTest','screenshot',str(logs/'card.png'));wait(lambda:png_ready(logs/'card.png'))
+        call('guiTest','move',width*.975);wait(lambda:state()['overlayAlpha']==1)
+        call('guiTest','screenshot',str(logs/'card-overlay.png'));wait(lambda:png_ready(logs/'card-overlay.png'))
+        assert state()['panelCount']==1 and state()['contentWidth']==width
+        print('PASS: full-width widget with idle-hidden overlay; hover reveals it in the same panel',flush=True)
         print('PASS: legacy config without preset falls back to Fade; real card image captured',flush=True)
-        print('RESULT: 9 real GUI groups passed',flush=True)
+        call('guiTest','setAutoReload',False)
+        old=state()['generation'];before=cfg.read_bytes()
+        assert state()['faces'][0]['revision']=='before'
+        facefile.write_text(facefile.read_text().replace('testRevision: "before"','testRevision: "after"'))
+        result=subprocess.run(['bash',str(repo/'swiftly/update.sh'),'--reload-only'],env=env,capture_output=True,text=True,timeout=25)
+        assert result.returncode==0,(result.stdout,result.stderr)
+        wait(lambda:state()['generation']!=old)
+        assert cfg.read_bytes()==before,('config changed',before,cfg.read_bytes())
+        assert qs.poll() is None,('app exited',qs.returncode,result.stdout,result.stderr)
+        assert all(face['revision']=='after' for face in state()['faces'])
+        assert other.poll() is None and call('other','ping',selected=othergui)=='alive'
+        print('PASS: production update script hard-reloads app/widgets in the same real process and preserves JSON',flush=True)
+        previous=json.loads(call('swiftly','status'))['generation']
+        qs.terminate();qs.wait(timeout=5)
+        result=subprocess.run(['bash',str(repo/'swiftly/update.sh'),'--reload-only'],env=env,capture_output=True,text=True,timeout=30)
+        assert result.returncode==0,(result.stdout,result.stderr)
+        assert json.loads(call('swiftly','status'))['generation']!=previous
+        assert cfg.read_bytes()==before and call('other','ping',selected=othergui)=='alive'
+        print('PASS: real stopped app is started automatically; unrelated shell remains alive',flush=True)
+        if '--network-update' in sys.argv[4:]:
+            mock=root/'package-mocks';mock.mkdir()
+            for name,text in {
+                'hyprctl':'#!/bin/bash\necho "Hyprland 0.55.0"\n',
+                'pacman':'#!/bin/bash\n[[ $1 = -T ]]\n',
+                'sudo':'#!/bin/bash\nexit 99\n',
+            }.items():
+                (mock/name).write_text(text);(mock/name).chmod(0o755)
+            updateenv=dict(env,PATH=str(mock)+':'+env['PATH'])
+            hypr=root/'hyprland.lua';hypr.write_text('-- test config\n')
+            for label,command in [
+                ('explicit', ['bash',str(repo/'swiftly/update.sh'),str(hypr)]),
+                ('recorded', ['bash',str(config/'swiftly/update.sh')]),
+            ]:
+                previous=json.loads(call('swiftly','status'))['generation']
+                result=subprocess.run(command,env=updateenv,capture_output=True,text=True,timeout=180)
+                (logs/('update-'+label+'.log')).write_text(result.stdout+result.stderr)
+                assert result.returncode==0,(result.stdout,result.stderr)
+                current=json.loads(call('swiftly','status'))
+                assert current['ready'] is True and current['generation']!=previous
+                assert current['stacks'][0]['widgets']==3
+                assert cfg.read_bytes()==before and call('other','ping',selected=othergui)=='alive'
+            call('swiftly','settings')
+            if grim.exists():
+                time.sleep(.2)
+                subprocess.run([str(loader),'--library-path',str(libs),str(grim),str(logs/'updated-desktop.png')],env=env,check=True,timeout=10)
+            print('PASS: two real network updates install verified files and reload real app/widgets; recorded no-argument update works',flush=True)
+        print('RESULT: 12 real GUI groups passed'+(' + 2 end-to-end network update runs' if '--network-update' in sys.argv[4:] else ''),flush=True)
     finally:
-        for p in [qs,sway]:
+        if qs is not None:
+            subprocess.run([str(cloud/'bin/qs'),'-p',str(gui),'kill'],env=env,capture_output=True,timeout=10)
+        for p in [qs,other,sway]:
             if p is not None:
                 p.terminate()
                 try:p.wait(timeout=5)
                 except subprocess.TimeoutExpired:p.kill();p.wait()
-        swaylog.close();qslog.close()
+        swaylog.close();qslog.close();otherlog.close()

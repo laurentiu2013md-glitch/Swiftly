@@ -17,6 +17,8 @@ Rectangle {
     readonly property alias switchArea: switching
     readonly property alias rail: visualRail
     readonly property alias contentArea: content
+    readonly property bool overlayActive: switching.containsMouse || switching.pressed
+            || menuButton.hovered || menuButton.visualFocus || overlayFeedback.running
     property alias widgetRepeater: faces
     signal settingsRequested()
     implicitWidth: 340
@@ -26,6 +28,8 @@ Rectangle {
     border.width: 0
     clip: true
     SwiftlyPalette { id: colors; theme: card.theme }
+    Timer { id: overlayFeedback; interval: 800 }
+    onSelectedIndexChanged: overlayFeedback.restart()
 
     function inSwitchZone(x) { return width > 0 && x >= switchZoneStart && x < width; }
     function scrollAt(x, delta) {
@@ -45,7 +49,6 @@ Rectangle {
     Item {
         id: content
         anchors.fill: parent
-        anchors.rightMargin: card.width * 0.05
         Repeater {
             id: faces
             model: card.widgets
@@ -79,6 +82,7 @@ Rectangle {
     // the strip after starting here; it is evaluated against its starting point.
     MouseArea {
         id: switching
+        z: 100
         objectName: "switchingStrip"
         x: card.switchZoneStart
         width: card.width - x
@@ -105,7 +109,7 @@ Rectangle {
             height: Math.min(card.height, Math.max(64, indicators.implicitHeight + 40))
             radius: width / 2
             color: switching.containsMouse || menuButton.hovered ? colors.primaryContainer : colors.containerHigh
-            opacity: switching.containsMouse || menuButton.hovered ? 1 : 0.72
+            opacity: card.overlayActive ? 1 : 0
             Behavior on color { ColorAnimation { duration: 160 } }
             Behavior on opacity { NumberAnimation { duration: 160 } }
             Column {
@@ -138,6 +142,7 @@ Rectangle {
             padding: 0
             text: "⋮"
             font.pixelSize: 16
+            opacity: visualRail.opacity
             Accessible.name: "Open Swiftly settings"
             contentItem: Label { text: menuButton.text; color: colors.foreground; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font: menuButton.font }
             background: Item {

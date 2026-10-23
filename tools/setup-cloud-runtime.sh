@@ -15,7 +15,7 @@ apt_options=(-o Dir::Etc::parts=- -o Dir::Etc::main=-
 apt-get "${apt_options[@]}" update
 apt-get "${apt_options[@]}" -s -o "Dir::State::status=$cloud_home/apt/empty-status" \
     --no-install-recommends install quickshell qt6-declarative-dev-tools \
-    qml6-module-qtqml-workerscript qml6-module-qtqml-models qml6-module-qttest qt6-wayland sway > "$cloud_home/logs/apt-isolated-plan.txt"
+    qml6-module-qtqml-workerscript qml6-module-qtqml-models qml6-module-qttest qt6-wayland sway grim > "$cloud_home/logs/apt-isolated-plan.txt"
 python3 - "$cloud_home" <<'PY'
 import hashlib
 from pathlib import Path
