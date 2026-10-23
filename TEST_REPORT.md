@@ -182,3 +182,16 @@ behavior was tested. Those require the missing GUI and a desktop session.
 No environment publication was performed. Reusable setup/start instructions are
 saved separately after validating the repository workflow; saved configuration
 and this running-instance evidence do not prove restoration in a future task.
+
+## Curl setup follow-up
+
+Added root `install.sh` with two modes: `config` and
+`full GUI_DIRECTORY HYPRLAND_CONFIG`. It downloads companion files from immutable
+commit `ba0f55b8b3101ddfa985f6b7e903a2f0b79e385f`, checks each SHA256, then runs
+the existing tested installer. Full mode still requires the user's Part 1 GUI.
+
+`bash -n install.sh` and `python3 tests/bootstrap_tests.py "$PWD"` passed.
+All five bootstrap groups passed: real HTTPS downloads/checksums for config-only,
+repeat config preservation, real full-mode downloads with mocked compositor and
+package commands, argument rejection, and injected HTTP/corrupt-download failures
+with cleanup and no config changes. No new full GUI or hardware claims are made.

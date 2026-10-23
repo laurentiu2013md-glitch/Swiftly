@@ -4,27 +4,46 @@ Swiftly Part 2 provides a JSON configuration, a Quickshell bridge with IPC,
 and installers for an existing Hyprland setup. **The Part 1 GUI is not included.**
 This repository is a tested integration bundle, not a complete desktop GUI.
 
-## Desktop setup
+## Quick setup with curl
 
-On Arch Linux with Hyprland running, provide your Part 1 GUI directory containing
-`shell.qml`, then run as your normal user:
+Download the small installer (works from Bash or fish):
 
 ```bash
-bash swiftly/install-all.sh /path/to/gui /path/to/hyprland.lua
-# Use your existing hyprland.conf instead if that is your loaded config.
-qs -p "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/swiftly"
+curl -fL https://raw.githubusercontent.com/laurentiu2013md-glitch/Swiftly/main/install.sh -o swiftly-install.sh
 ```
 
-Your GUI must instantiate `SwiftlyBridge` once. Review the generated gesture
-block before running `hyprctl reload`. Existing configuration is preserved;
-changed files and GUI trees receive backups. See [integration details](swiftly/README.md).
+**Config only** — install defaults and keep any existing config:
+
+```bash
+bash swiftly-install.sh config
+```
+
+**GUI + config** — on Arch Linux with Hyprland running, use your existing Part 1
+GUI directory containing `shell.qml` and your actual loaded Hyprland config:
+
+```bash
+bash swiftly-install.sh full /path/to/gui ~/.config/hypr/hyprland.lua
+# Or use ~/.config/hypr/hyprland.conf for an existing .conf setup.
+```
+
+The GUI must instantiate `SwiftlyBridge` once. Review the generated gesture block
+before `hyprctl reload`. Then start `qs -p ~/.config/quickshell/swiftly` (adjust
+for a custom `XDG_CONFIG_HOME`). Existing JSON is preserved; replaced GUI trees
+and changed files receive backups. Full setup copies your GUI; it cannot supply
+the missing Part 1. See [integration details](swiftly/README.md).
+
+Optional network bootstrap check: `python3 tests/bootstrap_tests.py "$PWD"`.
+It downloads real pinned files and mocks desktop/package commands.
+
+The downloader pins a tested source revision and checks each downloaded file's
+SHA256 before running it. Run it as your normal user.
 
 ## Tests
 
 From the repository root:
 
 ```bash
-bash -n swiftly/install-all.sh swiftly/install-config.sh tools/setup-cloud-runtime.sh
+bash -n install.sh swiftly/install-all.sh swiftly/install-config.sh tools/setup-cloud-runtime.sh
 python3 -m json.tool swiftly/config.json >/dev/null
 python3 -m compileall -q verify_swiftly.py swiftly/support.py tests
 python3 verify_swiftly.py
