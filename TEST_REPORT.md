@@ -375,3 +375,44 @@ are readable, and no settings/pill clipping was seen. The test retained its
 custom 800 ms duration, demonstrating preservation rather than silently restoring
 defaults. Cloud installation/startup instructions were updated and saved as a
 draft; no environment publication was performed.
+
+### Legacy gesture config update regression (2026-10-23)
+
+The reported Arch Quickshell 0.3.2 update failure (`ERROR: 'fingers'`, then
+install-all.sh line 49) was a direct dictionary lookup in the Python preflight,
+not a Quickshell version failure. The installer and bridge now resolve missing
+gesture fields consistently in memory: four fingers, left/right, first stack;
+missing enabled stays disabled. Explicit supplied values are retained and invalid
+values still fail validation. Existing JSON bytes are never rewritten by this fix.
+Source fix: c610947; verified downloader pin: 52ac73d.
+
+Validation commands and results:
+
+```bash
+bash -n install.sh swiftly/update.sh swiftly/install-all.sh swiftly/install-config.sh
+python3 -m json.tool swiftly/config.json >/dev/null
+python3 -m compileall -q verify_swiftly.py swiftly/support.py tests
+python3 verify_swiftly.py
+python3 tests/extended_tests.py "$PWD"
+python3 tests/update_tests.py "$PWD"
+python3 tests/runtime_tests.py "$PWD" /workspace/scratch/swiftly-cloudtest/bin/qs /workspace/scratch/swiftly-cloudtest/logs/legacy-bridge
+python3 tests/gui_tests.py "$PWD" /workspace/scratch/swiftly-cloudtest /workspace/scratch/swiftly-cloudtest/logs/legacy-online --network-update
+python3 tests/bootstrap_tests.py "$PWD"
+```
+
+Syntax, parsing, compilation and verifier passed; **26 extended checks, 9 updater
+mock groups, 9 real bridge groups, 12 real GUI groups, 2 online update runs, and
+6 bootstrap groups passed**. Legacy regression fixtures cover both .conf/.lua,
+missing fingers, partial gesture objects, disabled defaults, custom stack IDs,
+invalid explicit finger counts, live atomic reload and actual typed swipe IPC.
+The online updater reads an existing JSON with fingers omitted, downloads the
+public pinned fix with SHA256 checks, reloads the actual app/widgets twice
+(explicit path, then recorded path), and preserves exact config bytes and another
+running shell. Download/install logs are in logs/legacy-online/update-{explicit,recorded}.log
+in the scratch test workspace.
+
+Actual runtime: Quickshell 0.3.2 (Debian distribution), Qt 6.11.2, headless Sway
+1.12. Hyprland 0.55.0 and package commands are mocked; this is not a test on the
+user's Arch machine or physical touchpad. The updated production GUI was also
+visually inspected from the real compositor screenshot updated-desktop.png;
+labels and pill controls remain readable without clipping.
