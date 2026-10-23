@@ -100,9 +100,13 @@ def validate(config):
         raise ValueError("Stack IDs must contain only letters, numbers, _ or -")
     if len(set(ids)) != len(ids):
         raise ValueError("Duplicate stack IDs")
-    g = config["gestures"]
-    if not isinstance(g, dict):
+    supplied = config.get("gestures", {})
+    if not isinstance(supplied, dict):
         raise ValueError("gestures must be an object")
+    # Older configs may omit gesture fields. Resolve defaults in memory only;
+    # never replace the user's JSON. Missing enabled stays disabled.
+    g = {"enabled": False, "fingers": 4, "nextDirection": "left",
+         "previousDirection": "right", "targetStack": ids[0], **supplied}
     if type(g["enabled"]) is not bool:
         raise ValueError("gestures.enabled must be boolean")
     if type(g["fingers"]) is not int or not 3 <= g["fingers"] <= 9:

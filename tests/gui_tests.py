@@ -198,6 +198,13 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
         assert cfg.read_bytes()==before and call('other','ping',selected=othergui)=='alive'
         print('PASS: real stopped app is started automatically; unrelated shell remains alive',flush=True)
         if '--network-update' in sys.argv[4:]:
+            # Reproduce the reported update failure using a real existing config.
+            legacy=json.loads(cfg.read_text())
+            legacy['gestures'].pop('fingers')
+            replacement=cfg.with_suffix('.new')
+            replacement.write_text(json.dumps(legacy, indent=3)+'\n')
+            os.replace(replacement,cfg)
+            before=cfg.read_bytes()
             mock=root/'package-mocks';mock.mkdir()
             for name,text in {
                 'hyprctl':'#!/bin/bash\necho "Hyprland 0.55.0"\n',

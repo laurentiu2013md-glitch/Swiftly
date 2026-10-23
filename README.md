@@ -46,6 +46,11 @@ backups. The downloader verifies every companion file against a pinned source
 revision and SHA256 hashes. To use a separate GUI, the previous form still works:
 `bash swiftly-install.sh full /path/to/gui /path/to/hyprland.lua`.
 
+Older configs with missing gesture fields use four fingers, left/right for
+next/previous, and the first stack as the target. Existing values are retained;
+missing `enabled` leaves gestures disabled. These defaults apply in memory and
+do not rewrite your JSON. Explicit invalid values still produce an error.
+
 ## Update and reload
 
 For the first update from an older installation:

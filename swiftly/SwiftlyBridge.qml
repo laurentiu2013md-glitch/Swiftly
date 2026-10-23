@@ -44,6 +44,13 @@ Scope {
     function stackFor(stackId) {
         return adapter.stacks.find(s => s.id === stackId);
     }
+    function effectiveGestures() {
+        // Match support.py's legacy defaults without modifying/saving JSON.
+        return Object.assign({enabled: false, fingers: 4,
+            nextDirection: "left", previousDirection: "right",
+            targetStack: adapter.stacks.length ? adapter.stacks[0].id : ""},
+            adapter.gestures);
+    }
     function indexFor(stackId) {
         const s = stackFor(stackId);
         if (!s || !s.widgets || s.widgets.length === 0) return 0;
@@ -92,7 +99,7 @@ Scope {
             return "reloading";
         }
         function swipe(direction: string, fingers: int): void {
-            const g = adapter.gestures;
+            const g = bridge.effectiveGestures();
             // Stale compositor bindings are ignored until the helper is rerun.
             if (!g.enabled || g.fingers !== fingers) return;
             if (bridge.requirePointerZone && bridge.pointerStackId !== g.targetStack) return;

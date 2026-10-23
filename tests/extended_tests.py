@@ -85,9 +85,38 @@ with tempfile.TemporaryDirectory(prefix='swiftly-extended-', dir=BUNDLE.parent) 
                 command=json.loads(l.split('hl.exec_cmd(',1)[1].split(') end',1)[0])
                 assert shlex.split(command)[:3]==[str(binpath/'qs'),'-p',str(cfgroot/'quickshell/swiftly')]
     test('spaces round-trip through shell and Lua quoting', quoting)
+    def legacy_gestures():
+        try:
+            for suffix in ('.conf', '.lua'):
+                selected = home / ('legacy' + suffix)
+                selected.write_text('# user\n' if suffix == '.conf' else '-- user\n')
+                for gestures in ({'enabled': True}, {'enabled': False}, {}):
+                    value = copy.deepcopy(default)
+                    value['stacks'][0]['id'] = 'custom'
+                    value['gestures'] = gestures
+                    cfg.write_text(json.dumps(value, indent=3) + '\n')
+                    before = cfg.read_bytes()
+                    result = subprocess.run(['python3', str(BUNDLE/'swiftly/support.py'), str(gui), str(selected), '--gestures-only'], env=env, capture_output=True, text=True)
+                    assert result.returncode == 0, (result.stdout, result.stderr)
+                    assert cfg.read_bytes() == before
+                    text = selected.read_text()
+                    assert ('swipe left 4' in text) == (gestures.get('enabled') is True), text
+                    assert ('swipe right 4' in text) == (gestures.get('enabled') is True), text
+            value = copy.deepcopy(default)
+            value['gestures'].pop('fingers')
+            cfg.write_text(json.dumps(value))
+            before = cfg.read_bytes()
+            helper('--check')
+            helper()
+            assert cfg.read_bytes() == before
+        finally:
+            cfg.write_text(json.dumps(default))
+    test('legacy missing gesture fields: conf/Lua, disabled defaults, custom target, exact config preservation', legacy_gestures)
     valid_hypr=hypr.read_bytes()
     malformed=[None,[],42,{},dict(default,schemaVersion=True),dict(default,stacks=[None]),dict(default,stacks=[{'id':[]}]),dict(default,gestures=[])]
     g=copy.deepcopy(default);g['gestures']['nextDirection']=[];malformed.append(g)
+    for fingers in (None, True, '4', 2, 10):
+        g=copy.deepcopy(default);g['gestures']['fingers']=fingers;malformed.append(g)
     g=copy.deepcopy(default);g['stacks'].append(copy.deepcopy(g['stacks'][0]));malformed.append(g)
     for number, value in enumerate(malformed):
         def rejection(value=value):

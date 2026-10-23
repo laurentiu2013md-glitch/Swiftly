@@ -31,7 +31,7 @@ ShellRoot {
     IpcHandler {
         target: "probe"
         function identity(): string { return "SELECTED"; }
-        function state(): string { return JSON.stringify({theme:bridge.config.theme, stacks:bridge.config.stacks, interaction:bridge.config.interaction, indices:bridge.indices, observed:root.observedIndex, settings:root.settingsCount}); }
+        function state(): string { return JSON.stringify({gestures:bridge.effectiveGestures(), theme:bridge.config.theme, stacks:bridge.config.stacks, interaction:bridge.config.interaction, indices:bridge.indices, observed:root.observedIndex, settings:root.settingsCount}); }
         function clear(): void { bridge.indices = ({}); }
         function rawIndex(stackId: string): real { return bridge.indexFor(stackId); }
         function saveAccent(accent: string): void { const theme = Object.assign({},bridge.config.theme); theme.accent=accent; bridge.config.theme=theme; bridge.saveConfig(); }
@@ -107,6 +107,31 @@ with tempfile.TemporaryDirectory(prefix='swiftly-real-',dir=bundle.parent) as d:
                 write(value,atomic);wait(lambda:state()['theme']['accent']==accent)
             assert processes[0].poll() is None
         test('FileView/JsonAdapter in-place and repeated atomic replacement live reload',reload)
+        def legacy_gestures():
+            value=copy.deepcopy(default)
+            value['gestures'].pop('fingers')
+            write(value,True)
+            wait(lambda:state()['gestures']['fingers']==4)
+            # Wait for a unique config marker too, rather than the default alone.
+            value['theme']['accent']='#FF112233'
+            write(value,True);wait(lambda:state()['theme']['accent']=='#FF112233')
+            before=cfg.read_bytes()
+            call('probe','clear');call('swiftly','swipe','left',4)
+            assert call('swiftly','index','daily')=='1'
+            call('swiftly','swipe','right',4)
+            assert call('swiftly','index','daily')=='0'
+            assert cfg.read_bytes()==before
+            value['stacks'][0]['id']='custom'
+            value['gestures']={'enabled':True}
+            write(value,True);wait(lambda:state()['gestures']['targetStack']=='custom')
+            call('probe','clear');call('swiftly','swipe','left',4)
+            assert call('swiftly','index','custom')=='1'
+            value['gestures']={}
+            write(value,True);wait(lambda:state()['gestures']['enabled'] is False)
+            call('probe','clear');call('swiftly','swipe','left',4)
+            assert call('swiftly','index','custom')=='0'
+            write(default,True);wait(lambda:state()['gestures']['targetStack']=='daily')
+        test('legacy gesture defaults after live reload: real swipe IPC and no config rewrite',legacy_gestures)
         def clamp():
             value=copy.deepcopy(default);value['interaction']['wrap']=False
             write(value,True);wait(lambda:state()['interaction']['wrap'] is False)
