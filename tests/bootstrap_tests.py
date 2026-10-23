@@ -43,6 +43,8 @@ with tempfile.TemporaryDirectory(prefix='swiftly-bootstrap-') as d:
     for name in ['shell.qml','SwiftlyCard.qml','SwiftlySettings.qml','WidgetFace.qml','SwiftlyPalette.qml','SwiftlyBridge.qml']:
         assert (home/'.config/quickshell/swiftly'/name).is_file(),name
     assert cfg.read_bytes()==before
+    assert (home/'.config/swiftly/update.sh').is_file()
+    assert json.loads((home/'.config/swiftly/install-state.json').read_text())['guiDirectory'] is None
     print('PASS: default full-mode real pinned GUI downloads/checksums; config preserved')
     run('bad',success=False)
     run('full',success=False)

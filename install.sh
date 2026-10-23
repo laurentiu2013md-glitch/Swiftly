@@ -20,7 +20,7 @@ main() {
     esac
     command -v curl >/dev/null
     command -v sha256sum >/dev/null
-    local revision=8ba3838d02f7969d5651ac66cefc96b7cec6a083
+    local revision=f376112bf63cb9c0344933f7ddd48f1a39f751f6
     local base="https://raw.githubusercontent.com/laurentiu2013md-glitch/Swiftly/$revision/swiftly"
     temporary=
     temporary=$(mktemp -d)
@@ -29,18 +29,19 @@ main() {
     declare -A hashes=(
     [install-config.sh]=7bcd988aa4ebd20b630857570e7638593db9d5bb7a8372b52d3e8bb0dbcdf96a
     [config.json]=54706dd92753387f96df9466071bf1d6ad2a2f62d6ca37b0c09be8bc781bc59c
-    [install-all.sh]=c372277116fc264f8859a37bdc3a6d38eb1ab812c08e4aa3d4a8cec1c6f06584
-    [support.py]=e2d4a356fc2fe7a97b97f5e85f4e08b12d5dd3a145d4fd0e9a6c927c1b13498a
-    [SwiftlyBridge.qml]=6fb7849cd209c2b4ef599d4343d25cc14f34bff47f51b63f0e7783914684822c
-    [gui/shell.qml]=839bf63fc11787c47a22e141e173c6cd047ffb164369d4686ddeb3af43e4b56c
-    [gui/SwiftlyCard.qml]=57bd7b487d0386a0b5ed5419b3ac28a39261ad18b07124e7101dfddad31388bf
+    [install-all.sh]=f06b0f0a3c23130c17f47163d14c1eb52792cd154df0246862ae059ac6b170c9
+    [support.py]=184ca507deee0b41b36d5b2b886c4977253f62abe867bac28b3d298c8f02ee13
+    [SwiftlyBridge.qml]=fc9de9e8f62b3d156107fb23c987da9e1102e944f31eed9e38e70362b4b69b96
+    [update.sh]=8c33880fab784a61c49593586260750b7f6371cc854ad97d1704a2118dd9ef7f
+    [gui/shell.qml]=ccdb2f6fecc3c75c965139eef5949940a5b3728e07ad7f4774de2e79c5665d77
+    [gui/SwiftlyCard.qml]=23ef56dc0ac2624aad749dc3706b2430d8458f81bd39bc5f31fef2736859d8d0
     [gui/SwiftlySettings.qml]=7f011819af6ebd41327d3caeab91fc3ea50dccef94a113f258e06ddf067b8ffb
     [gui/WidgetFace.qml]=e2901f33c7e969a6075d1ebc5f5ae7d0d300839e785585912f723d2d791e652f
     [gui/SwiftlyPalette.qml]=ec3cb86ab36e3f3c756caee95b659b5901a7dd94845bbeb9bee7c2e149791c29
     )
     local files=(install-config.sh config.json)
     if [[ $mode = full ]]; then
-        files+=(install-all.sh support.py SwiftlyBridge.qml)
+        files+=(install-all.sh support.py SwiftlyBridge.qml update.sh)
         if [[ $# -eq 2 ]]; then
             files+=(gui/shell.qml gui/SwiftlyCard.qml gui/SwiftlySettings.qml gui/WidgetFace.qml gui/SwiftlyPalette.qml)
         fi
