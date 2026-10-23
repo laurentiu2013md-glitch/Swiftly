@@ -83,6 +83,28 @@ Scope {
         return true;
     }
 
+    function saveSettings(preset, duration, stackId, width, height, position) {
+        if (animationPresets.indexOf(preset) < 0 || !stackFor(stackId)
+                || !Number.isInteger(width) || width < 120 || width > 8192
+                || !Number.isInteger(height) || height < 100 || height > 8192) return false;
+        if (position !== undefined && (!position
+                || ["top-left", "top-right", "bottom-left", "bottom-right"].indexOf(position.anchor) < 0
+                || !Number.isInteger(position.x) || position.x < 0 || position.x > 32768
+                || !Number.isInteger(position.y) || position.y < 0 || position.y > 32768)) return false;
+        const interaction = Object.assign({}, adapter.interaction);
+        interaction.animationPreset = preset;
+        interaction.animationMs = Math.max(0, Math.min(2000, Math.round(Number(duration) || 0)));
+        const stacks = adapter.stacks.map(stack => stack.id === stackId
+            ? Object.assign({}, stack, {
+                size: Object.assign({}, stack.size || {}, {width: width, height: height})
+            }, position === undefined ? {} : {position: Object.assign({}, stack.position || {}, position)})
+            : stack);
+        adapter.interaction = interaction;
+        adapter.stacks = stacks;
+        saveConfig();
+        return true;
+    }
+
     IpcHandler {
         target: "swiftly"
         function next(stackId: string): void { bridge.step(stackId, 1); }

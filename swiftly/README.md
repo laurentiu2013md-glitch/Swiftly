@@ -24,29 +24,27 @@ $XDG_CONFIG_HOME/quickshell/swiftly and injects SwiftlyBridge.qml.
 
 ## Bundled GUI
 
-The body is transparent and borderless, with no outer content padding. The
-switching overlay uses the rightmost 5%, hides when idle and reveals on hover
-or briefly after switching; it shares the widget window and reserves no side
-column. The pointer switching area occupies the rightmost 5%; the left
-95% is a click-through, read-only widget display. Material 3 tonal pills, preset
-buttons and a duration slider provide settings. New cards default to 340×144;
-existing configured dimensions/colors are preserved. The menu supports taps
-for settings and drags for switching. Settings can be dismissed with Escape.
-
+The body is transparent and borderless, with no outer padding. The switching
+strip is invisible and shares the widget window without reserving a side column.
+New configs use the rightmost 10%; configs missing `interaction.clickEdgeStart`
+retain a 5% strip. The area outside it is a click-through, read-only display.
+There are no widget indicators or on-card settings controls. Open settings using
+`qs -p ~/.config/quickshell/swiftly ipc call swiftly settings` or a launcher.
+Settings can be dismissed with Escape. Existing dimensions and colors are kept.
 
 The cards show a clock, today's date, and MPRIS media metadata. Media controls,
 a month grid, arbitrary third-party widget types and monitor hotplug workflows
 are outside this minimal implementation. Monitor names select an output; an
 empty/unavailable name falls back to the first screen.
 
-The rail menu opens animation settings. Choose Fade (default), Slide, Zoom, or None,
+Settings offers Fade (default), Slide, Zoom, or None,
 set a duration from 0 to 2000 ms, and press Save. Closing without Save discards
 those edits. Missing/unknown animation presets fall back to Fade, so existing
 configs need no migration. None or duration 0 disables transitions.
 
-Wheel events and swipes must start in the rightmost 5% of the card. Up/left
+Click, wheel, and swipe switching use the configured right-edge strip. Up/left
 advances and down/right reverses; scrollInvert reverses wheel input. There is no
-switching MouseArea over the left 95%. Compositor swipe IPC is also gated by
+switching MouseArea outside the configured strip. Compositor swipe IPC is also gated by
 hovering over the target card's strip. Explicit next/previous IPC remains useful
 for automation. Touchscreen and physical trackpad behavior need desktop testing.
 
@@ -282,3 +280,24 @@ nontransactional behavior; a failure is reported without an explicit reload, and
 existing backups remain available. Gesture changes still need review and a
 Hyprland reload; the updater reloads the app/widgets. Custom GUIs can bind the
 bridge's widgetsReady property to their own widget creation readiness.
+
+## Widget size controls
+
+Settings includes editable Width and Height fields (logical pixels) for the selected
+enabled stack. Save updates `stacks[].size` and the animation fields together in one
+explicit write; Close discards drafts. Width must be an integer from 120 to 8192;
+height must be an integer from 100 to 8192. Invalid dimensions leave the config
+unchanged. Existing widget definitions and stack placement are preserved.
+
+The card has no indicator dots or settings button. Use the settings IPC command
+or a desktop launcher to open settings. `interaction.clickEdgeStart` defaults to
+0.9 in new configs and falls back to 0.95 for older configs. Click advances one
+widget; recognized swipes do not also count as clicks.
+
+## Location controls
+
+Select Top left, Top right, Bottom left, or Bottom right and edit horizontal/vertical
+insets in pixels. Insets are nonnegative integers up to 32768, measured inward
+from the selected screen edges. Size, location, and animation are saved together;
+closing without Save discards the changes. Settings scrolls within a fixed window
+while its Save and Close buttons stay visible.

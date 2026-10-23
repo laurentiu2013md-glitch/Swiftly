@@ -55,7 +55,7 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
                 const face=card.widgetRepeater.itemAt(i);
                 faces.push({revision:face.testRevision,opacity:face.opacity, x:face.x, scale:face.scale});
             }
-            return JSON.stringify({index:card.selectedIndex,width:card.width,zone:card.switchArea.x,zoneWidth:card.switchArea.width,railWidth:card.rail.width,masked:widgetPanels.instances[0].mask.item===card.switchArea,bodyAlpha:card.color.a,contentX:card.contentArea.x,contentY:card.contentArea.y,contentWidth:card.contentArea.width,contentHeight:card.contentArea.height,preset:card.preset,duration:card.duration,faces:faces,hover:runtimeBridge.pointerStackId,settingsVisible:settings.visible,generation:runtimeBridge.generation,overlayAlpha:card.rail.opacity,panelCount:widgetPanels.instances.length,status:settings.status,sourceForeground:card.testColors.theme.foreground,actualForeground:card.testColors.foreground.toString(),titleColor:input.findChild(settings.contentItem,"settingsHeading").color.toString(),presetFill:input.findChild(settings.contentItem,"preset-0").background.color.toString()});
+            return JSON.stringify({index:card.selectedIndex,width:card.width,zone:card.switchArea.x,zoneWidth:card.switchArea.width,masked:widgetPanels.instances[0].mask.item===card.switchArea,bodyAlpha:card.color.a,contentX:card.contentArea.x,contentY:card.contentArea.y,contentWidth:card.contentArea.width,contentHeight:card.contentArea.height,preset:card.preset,duration:card.duration,faces:faces,hover:runtimeBridge.pointerStackId,settingsVisible:settings.visible,generation:runtimeBridge.generation,panelCount:widgetPanels.instances.length,status:settings.status,sourceForeground:card.testColors.theme.foreground,actualForeground:card.testColors.foreground.toString(),titleColor:input.findChild(settings.contentItem,"settingsHeading").color.toString(),presetFill:input.findChild(settings.contentItem,"preset-0").background.color.toString()});
         }
         function setAutoReload(enabled: bool): void { Quickshell.watchFiles = enabled; }
         function wheel(x: real, delta: int): void { input.mouseWheel(widgetPanels.instances[0].testCard,x,80,0,delta); }
@@ -65,7 +65,7 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
             const button=input.findChild(settings.contentItem,"preset-"+index);
             input.mouseClick(button);
         }
-        function openSettings(): void { const button=input.findChild(widgetPanels.instances[0].testCard,"cardSettings"); input.mouseClick(button); }
+        function openSettings(): void { runtimeBridge.settingsRequested(); }
         function durationZero(): void { const slider=input.findChild(settings.contentItem,"animationDuration"); input.mouseClick(slider,slider.leftPadding,slider.height/2); }
         function save(): void { const button=input.findChild(settings.contentItem,"saveAnimation"); input.mouseClick(button); }
         function settingsScreenshot(path: string): void { settings.contentItem.grabToImage(result => result.saveToFile(path)); }
@@ -111,24 +111,26 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
         qs=subprocess.Popen([str(cloud/'bin/qs'),'-p',str(gui)],env=env,stdout=qslog,stderr=subprocess.STDOUT)
         wait(lambda:state()['width']>0)
         s=state();assert s['preset']=='fade' and s['index']==0
-        assert abs(s['zone']-s['width']*.95)<.01 and abs(s['zoneWidth']-s['width']*.05)<.01
+        assert abs(s['zone']-s['width']*default['interaction'].get('clickEdgeStart',.95))<.01 and abs(s['zoneWidth']-s['width']*(1-default['interaction'].get('clickEdgeStart',.95)))<.01
         assert s['panelCount']==1
-        assert abs(s['railWidth']-s['width']*.05)<.01 and s['bodyAlpha']==0 and s['masked']
+        assert s['bodyAlpha']==0 and s['masked']
         assert s['contentX']==0 and s['contentY']==0 and abs(s['contentWidth']-s['width'])<.01
         print('PASS: production panel/card/settings loaded on real headless Wayland; Fade default; strip geometry',flush=True)
         width=s['width']
-        for x in [10,width*.5,width*.95-1]:
+        edge_start=default['interaction'].get('clickEdgeStart',.95)
+        edge_mid=(1+edge_start)/2
+        for x in [10,width*.5,width*edge_start-1]:
             call('guiTest','wheel',x,-120);assert state()['index']==0,(x,state())
-        call('guiTest','wheel',width*.975,-120);wait(lambda:state()['index']==1)
+        call('guiTest','wheel',width*edge_mid,-120);wait(lambda:state()['index']==1)
         time.sleep(.16)
-        call('guiTest','wheel',width*.975,120);wait(lambda:state()['index']==0)
-        print('PASS: actual Qt wheel events ignored in left 95%, advance/reverse in right 5%',flush=True)
+        call('guiTest','wheel',width*edge_mid,120);wait(lambda:state()['index']==0)
+        print('PASS: wheel input stays inside the configured edge strip',flush=True)
         call('guiTest','drag',width*.5,-80);assert state()['index']==0
-        call('guiTest','drag',width*.975,-80);wait(lambda:state()['index']==1)
+        call('guiTest','drag',width*edge_mid,-80);wait(lambda:state()['index']==1)
         print('PASS: actual Qt mouse swipes must start inside right strip',flush=True)
         call('guiTest','move',width*.5)
         before=state()['index'];call('swiftly','swipe','left',4);assert state()['index']==before
-        call('guiTest','move',width*.975);wait(lambda:state()['hover']=='daily')
+        call('guiTest','move',width*edge_mid);wait(lambda:state()['hover']=='daily')
         call('swiftly','swipe','left',4);assert state()['index']==(before+1)%3
         print('PASS: compositor swipe IPC ignores pointer outside strip and accepts inside',flush=True)
         call('guiTest','openSettings');wait(lambda:state()['settingsVisible'])
@@ -143,7 +145,7 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
         call('guiTest','selectPreset',1);call('guiTest','closeSettings')
         wait(lambda:not state()['settingsVisible']);assert cfg.read_bytes()==before
         call('guiTest','openSettings');wait(lambda:state()['settingsVisible'])
-        print('PASS: rail menu tap opens Material dialog; Close discards unsaved preset',flush=True)
+        print('PASS: settings signal opens Material dialog; Close discards unsaved preset',flush=True)
         for index,preset in enumerate(['fade','slide','zoom','none']):
             call('guiTest','selectPreset',index)
             call('guiTest','save')
@@ -171,12 +173,12 @@ with tempfile.TemporaryDirectory(prefix='swiftly-gui-') as d:
         value=json.loads(cfg.read_text());value['interaction'].pop('animationPreset');save_config(value)
         wait(lambda:state()['preset']=='fade')
         wait(lambda:state()['faces'][state()['index']]['opacity']==1)
-        call('guiTest','move',width*.5);wait(lambda:state()['overlayAlpha']==0)
+        call('guiTest','move',width*.5)
         call('guiTest','screenshot',str(logs/'card.png'));wait(lambda:png_ready(logs/'card.png'))
-        call('guiTest','move',width*.975);wait(lambda:state()['overlayAlpha']==1)
+        call('guiTest','move',width*edge_mid)
         call('guiTest','screenshot',str(logs/'card-overlay.png'));wait(lambda:png_ready(logs/'card-overlay.png'))
         assert state()['panelCount']==1 and state()['contentWidth']==width
-        print('PASS: full-width widget with idle-hidden overlay; hover reveals it in the same panel',flush=True)
+        print('PASS: full-width widget keeps its invisible switching strip in the same panel',flush=True)
         print('PASS: legacy config without preset falls back to Fade; real card image captured',flush=True)
         call('guiTest','setAutoReload',False)
         old=state()['generation'];before=cfg.read_bytes()
